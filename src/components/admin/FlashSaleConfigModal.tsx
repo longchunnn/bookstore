@@ -1,5 +1,5 @@
 import { Modal, Button, Input } from "antd";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { ApiBook } from "../../utils/apiMappers";
 
 type ConfigPayload = {
@@ -29,17 +29,18 @@ export default function FlashSaleConfigModal({
     purchase_limit: initialConfig?.purchase_limit ?? "1",
   });
 
-  useEffect(() => {
-    if (initialConfig) {
-      setConfig(initialConfig);
-    } else {
-      setConfig({
-        flash_price: "",
-        flash_stock: "50",
-        purchase_limit: "1",
-      });
+  const getBaseConfig = () =>
+    initialConfig || {
+      flash_price: "",
+      flash_stock: "50",
+      purchase_limit: "1",
+    };
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      setConfig(getBaseConfig());
     }
-  }, [initialConfig, isOpen]);
+  };
 
   const handleSubmit = () => {
     const price = Number(config.flash_price || 0);
@@ -78,6 +79,7 @@ export default function FlashSaleConfigModal({
     <Modal
       title={`Cấu hình Flash Sale: ${book?.title || ""}`}
       open={isOpen}
+      afterOpenChange={handleOpenChange}
       onCancel={onClose}
       footer={[
         <Button key="cancel" onClick={onClose}>
