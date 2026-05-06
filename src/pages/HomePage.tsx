@@ -148,16 +148,31 @@ export default function HomePage() {
   );
   const reviews = useAppSelector((state) => state.books.reviews as DbReview[]);
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
-  const [hasFlashSaleUiExpired, setHasFlashSaleUiExpired] = useState(false);
+  const [expiredCampaignKey, setExpiredCampaignKey] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     void dispatch(fetchCatalog());
     void dispatch(fetchActiveCampaign());
   }, [dispatch]);
 
+  const flashSaleState = useAppSelector((state) => state.flashSale);
+  const activeCampaign = flashSaleState.activeCampaign;
+
+  const campaignKey = useMemo(
+    () =>
+      activeCampaign
+        ? `${activeCampaign.id}-${activeCampaign.ends_at ?? ""}`
+        : "",
+    [activeCampaign],
+  );
+
   const handleFlashSaleExpired = useCallback(() => {
-    setHasFlashSaleUiExpired(true);
-  }, []);
+    if (campaignKey) {
+      setExpiredCampaignKey(campaignKey);
+    }
+  }, [campaignKey]);
 
   const loading = useAppSelector((state) => state.books.loading);
   const error = useAppSelector((state) => state.books.error);
@@ -197,12 +212,9 @@ export default function HomePage() {
     [books, ratingMap],
   );
 
-  const flashSaleState = useAppSelector((state) => state.flashSale);
-  const activeCampaign = flashSaleState.activeCampaign;
-
-  useEffect(() => {
-    setHasFlashSaleUiExpired(false);
-  }, [activeCampaign?.id, activeCampaign?.ends_at]);
+  const hasFlashSaleUiExpired = Boolean(
+    campaignKey && expiredCampaignKey === campaignKey,
+  );
 
   const isFlashSaleActive = Boolean(
     activeCampaign && flashSaleState.items.length && !hasFlashSaleUiExpired,

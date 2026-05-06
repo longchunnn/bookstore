@@ -22,14 +22,14 @@ function getErrorMessage(error: unknown): string {
 }
 
 export const fetchActiveCampaign = createAsyncThunk<
-  { campaign: FlashSaleCampaign; items: FlashSaleItem[] },
+  { campaign: FlashSaleCampaign | null; items: FlashSaleItem[] },
   void,
   { rejectValue: string }
 >("flashSale/fetchActiveCampaign", async (_: void, { rejectWithValue }) => {
   try {
     const campaigns = await getActiveCampaigns();
     if (campaigns.length === 0) {
-      return { campaign: null as any, items: [] };
+      return { campaign: null, items: [] };
     }
 
     const campaign = campaigns[0];

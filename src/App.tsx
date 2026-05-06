@@ -5,12 +5,14 @@ import AppRoutes from "./routes/AppRoutes";
 import { store } from "./app/store";
 import "react-toastify/dist/ReactToastify.css";
 import SupportWidget from "./components/support/SupportWidget";
+import ChatbotWidget from "./components/chatbot/ChatbotWidget";
 
 export default function App() {
   return (
     <Provider store={store}>
       <BrowserRouter>
         <AppRoutes />
+        <ChatbotWidget />
         <SupportWidget />
         <ToastContainer
           position="top-right"
