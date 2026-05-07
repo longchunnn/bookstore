@@ -236,6 +236,9 @@ export default function AccountPage() {
   const dispatch = useAppDispatch();
   const sessionUserId = useAppSelector((state) => state.session.userId);
   const avatarSrc = useAppSelector((state) => state.session.avatarSrc);
+  const persistedProfileForm = useAppSelector(
+    (state) => state.session.profileForm,
+  );
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<SectionKey>("profile");
   const [user, setUser] = useState<UserRecord | null>(null);
@@ -492,13 +495,20 @@ export default function AccountPage() {
           savedAddressesRef.current,
         );
         const savedAddress = getPreferredAddress(allSavedAddresses);
-        const fallbackForm = foundUser
+        const baseForm = foundUser
           ? getDefaultForm(foundUser)
           : {
               ...getDefaultForm(null),
               fullName: displayFromToken,
               shippingFullName: displayFromToken,
             };
+
+        const fallbackForm = {
+          ...baseForm,
+          fullName: persistedProfileForm.fullName || baseForm.fullName,
+          phone: persistedProfileForm.phone || baseForm.phone,
+          email: persistedProfileForm.email || baseForm.email,
+        };
         const fallbackWithSavedAddress = savedAddress
           ? {
               ...fallbackForm,
@@ -537,10 +547,16 @@ export default function AccountPage() {
           savedAddressesRef.current,
         );
         const savedAddress = getPreferredAddress(allSavedAddresses);
-        const fallback = {
+        const base = {
           ...getDefaultForm(null),
           fullName: displayFromToken,
           shippingFullName: displayFromToken,
+        };
+        const fallback = {
+          ...base,
+          fullName: persistedProfileForm.fullName || base.fullName,
+          phone: persistedProfileForm.phone || base.phone,
+          email: persistedProfileForm.email || base.email,
         };
         const fallbackWithSavedAddress = savedAddress
           ? {
@@ -987,9 +1003,26 @@ export default function AccountPage() {
   const isProcessingOrder = (orderStatus: string): boolean =>
     isProcessingStatus(orderStatus);
 
+  const getStatusStyles = (status: string) => {
+    const s = String(status || "").toLowerCase();
+    if (s.includes("đã hủy") || s.includes("da huy")) {
+      return "bg-rose-100 text-rose-700 border border-rose-200";
+    }
+    if (s.includes("đang giao") || s.includes("dang giao")) {
+      return "bg-amber-100 text-amber-700 border border-amber-200";
+    }
+    if (s.includes("đã giao") || s.includes("da giao") || s.includes("thành công")) {
+      return "bg-emerald-100 text-emerald-700 border border-emerald-200";
+    }
+    if (s.includes("đang xử lý") || s.includes("dang xu ly") || s.includes("cho duyet")) {
+      return "bg-blue-100 text-blue-700 border border-blue-200";
+    }
+    return "bg-gray-100 text-gray-700 border border-gray-200";
+  };
+
   const handleCancelOrder = async (orderId: string) => {
     try {
-      const updated = await cancelOrder(orderId);
+      const updated = await cancelOrder(orderId, currentUserId);
       setOrders((current) =>
         current.map((item) => (item.id === orderId ? updated : item)),
       );
@@ -1224,7 +1257,7 @@ export default function AccountPage() {
                                 {formatCurrency(order.total_amount)}
                               </p>
                             </div>
-                            <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusStyles(order.order_status)}`}>
                               {order.order_status}
                             </span>
                           </div>
@@ -1282,7 +1315,7 @@ export default function AccountPage() {
                           </div>
                         </div>
 
-                        <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-700">
+                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusStyles(order.order_status)}`}>
                           {order.order_status}
                         </span>
                       </div>

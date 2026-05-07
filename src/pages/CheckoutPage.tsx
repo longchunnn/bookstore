@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { CheckCircleOutlined } from "@ant-design/icons";
 import Header from "../components/layouts/Header";
 import Footer from "../components/layouts/Footer";
 import ShippingAddressSection from "../components/common/ShippingAddressSection";
@@ -14,6 +16,7 @@ import { createOrder } from "../services/ordersService";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import {
   clearCheckoutSession as clearCheckoutSessionAction,
+  removeCartItems,
   type CheckoutSession,
 } from "../features/cart/cartSlice";
 import {
@@ -155,6 +158,8 @@ export default function CheckoutPage() {
   });
   const [addressError, setAddressError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [countdown, setCountdown] = useState(5);
 
   const [provinces, setProvinces] = useState<AdministrativeOption[]>([]);
   const [districts, setDistricts] = useState<AdministrativeOption[]>([]);
@@ -175,6 +180,20 @@ export default function CheckoutPage() {
       disposed = true;
     };
   }, []);
+
+  useEffect(() => {
+    let timer: any;
+    if (showSuccessModal && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    } else if (showSuccessModal && countdown === 0) {
+      navigate("/account");
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [showSuccessModal, countdown, navigate]);
 
   useEffect(() => {
     let disposed = false;
@@ -256,13 +275,13 @@ export default function CheckoutPage() {
 
   const discountAmount = selectedDiscountVoucher
     ? Math.min(
-        eligibleDiscountSubtotal,
-        Math.round(
-          (eligibleDiscountSubtotal *
-            selectedDiscountVoucher.discount_percent) /
-            100,
-        ),
-      )
+      eligibleDiscountSubtotal,
+      Math.round(
+        (eligibleDiscountSubtotal *
+          selectedDiscountVoucher.discount_percent) /
+        100,
+      ),
+    )
     : 0;
 
   const baseShippingFee = shippingMethod === "standard" ? 15000 : 30000;
@@ -392,21 +411,21 @@ export default function CheckoutPage() {
 
     const shippingAddress = selectedAddress
       ? [
-          selectedAddress.addressLine,
-          selectedAddress.wardName,
-          selectedAddress.districtName,
-          selectedAddress.provinceName,
-        ]
-          .filter(Boolean)
-          .join(", ")
+        selectedAddress.addressLine,
+        selectedAddress.wardName,
+        selectedAddress.districtName,
+        selectedAddress.provinceName,
+      ]
+        .filter(Boolean)
+        .join(", ")
       : [
-          form.addressLine,
-          findNameByCode(wards, form.wardCode),
-          findNameByCode(districts, form.districtCode),
-          findNameByCode(provinces, form.provinceCode),
-        ]
-          .filter(Boolean)
-          .join(", ");
+        form.addressLine,
+        findNameByCode(wards, form.wardCode),
+        findNameByCode(districts, form.districtCode),
+        findNameByCode(provinces, form.provinceCode),
+      ]
+        .filter(Boolean)
+        .join(", ");
 
     const orderPayload = {
       user_id: userId,
@@ -447,13 +466,14 @@ export default function CheckoutPage() {
     }
 
     setAddressError("");
-    setSuccessMessage(
-      "Thanh toán thành công. Đơn hàng của bạn đang được xử lý.",
-    );
+    setShowSuccessModal(true);
+
+    const purchasedItemIds = items.map(item => item.id);
+    dispatch(removeCartItems(purchasedItemIds));
     dispatch(clearCheckoutSessionAction());
   };
 
-  if (items.length === 0) {
+  if (items.length === 0 && !showSuccessModal) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
@@ -693,6 +713,41 @@ export default function CheckoutPage() {
       </main>
 
       <Footer />
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative w-full max-w-sm transform overflow-hidden rounded-2xl bg-white p-8 text-center shadow-2xl transition-all animate-in fade-in zoom-in duration-300">
+            <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+              <CheckCircleOutlined className="text-4xl" />
+            </div>
+            <h3 className="mb-2 text-2xl font-bold text-gray-900">
+              Đặt hàng thành công!
+            </h3>
+            <p className="mb-8 text-gray-600">
+              Cảm ơn bạn đã tin tưởng lựa chọn Sách Xanh. Đơn hàng của bạn đang được xử lý và sẽ sớm được giao đến bạn.
+            </p>
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate("/account")}
+                className="w-full rounded-xl bg-teal-700 py-3 font-semibold text-white transition-colors hover:bg-teal-800"
+              >
+                Theo dõi đơn hàng
+              </button>
+              <button
+                onClick={() => navigate("/")}
+                className="w-full rounded-xl border border-gray-200 bg-white py-3 font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+              >
+                Tiếp tục mua sắm
+              </button>
+            </div>
+            <p className="mt-6 text-xs text-gray-400">
+              Tự động chuyển hướng sau {countdown} giây...
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

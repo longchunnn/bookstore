@@ -3,12 +3,16 @@ import { Link, useSearchParams } from "react-router-dom";
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import Header from "../components/layouts/Header";
 import Footer from "../components/layouts/Footer";
-import { useAppDispatch } from "../app/hooks";
-import { clearCheckoutSession } from "../features/cart/cartSlice";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import {
+  clearCheckoutSession,
+  removeCartItems,
+} from "../features/cart/cartSlice";
 
 export default function VNPayCallbackPage() {
   const [searchParams] = useSearchParams();
   const dispatch = useAppDispatch();
+  const checkoutSession = useAppSelector((state) => state.cart.checkoutSession);
   const [isProcessed, setIsProcessed] = useState(false);
 
   const status = searchParams.get("status") || "unknown";
@@ -17,10 +21,14 @@ export default function VNPayCallbackPage() {
 
   useEffect(() => {
     if (status === "success" && !isProcessed) {
+      if (checkoutSession?.items) {
+        const itemIds = checkoutSession.items.map((i) => i.id);
+        dispatch(removeCartItems(itemIds));
+      }
       dispatch(clearCheckoutSession());
       setIsProcessed(true);
     }
-  }, [status, dispatch, isProcessed]);
+  }, [status, dispatch, isProcessed, checkoutSession]);
 
   const isSuccess = status === "success";
 
