@@ -8,6 +8,7 @@ import BookDetailPage from "../pages/BookDetailPage";
 import CartPage from "../pages/CartPage";
 import CheckoutPage from "../pages/CheckoutPage";
 import CheckoutOrderPage from "../pages/CheckoutOrderPage";
+import VNPayCallbackPage from "../pages/VNPayCallbackPage";
 import AccountPage from "../pages/AccountPage.tsx";
 import StaffDashboardPage from "../pages/StaffDashboardPage";
 import RequireStaff from "../components/guards/RequireStaff";
@@ -45,6 +46,7 @@ export default function AppRoutes() {
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/checkout/:id" element={<CheckoutOrderPage />} />
+        <Route path="/payment/vnpay-callback" element={<VNPayCallbackPage />} />
         <Route path="/account" element={<AccountPage />} />
 
         <Route element={<RequireStaff />}>

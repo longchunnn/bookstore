@@ -59,6 +59,7 @@ export type ApiOrder = {
   payment_method: string;
   order_status: string;
   items: ApiOrderItem[];
+  payment_url?: string;
 };
 
 export function normalizeBook(raw: unknown): ApiBook {
@@ -138,6 +139,12 @@ export function normalizeOrder(raw: unknown): ApiOrder {
     items: Array.isArray(order.items)
       ? order.items.map((entry) => normalizeOrderItem(entry))
       : [],
+    payment_url:
+      typeof order.payment_url === "string"
+        ? order.payment_url
+        : typeof order.paymentUrl === "string"
+          ? order.paymentUrl
+          : undefined,
   };
 }
 
