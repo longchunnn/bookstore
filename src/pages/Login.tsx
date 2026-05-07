@@ -2,8 +2,10 @@ import { useState } from "react";
 import { normalizeRole } from "../utils/roles";
 import { parseJwtPayload } from "../utils/jwt";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowRightOutlined, BookOutlined } from "@ant-design/icons";
-import { loginWithEmailOrUsername } from "../services/authService";
+import { ArrowRightOutlined, BookOutlined, GoogleOutlined } from "@ant-design/icons";
+import { loginWithEmailOrUsername, loginWithGoogleToken } from "../services/authService";
+import { firebaseAuth } from "../firebase/client";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { setAccessToken } from "../services/axiosClient";
 import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
@@ -31,6 +33,36 @@ export default function LoginPage() {
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const handleLoginSuccess = (accessToken: string) => {
+    setAccessToken(accessToken);
+    const payload = parseJwtPayload(accessToken);
+    const primaryRole = normalizeRole(payload?.primary_role);
+    toast.success("Đăng nhập thành công");
+
+    const fromPath = (
+      location.state as { from?: { pathname?: string } } | null
+    )?.from?.pathname;
+
+    const defaultTarget =
+      primaryRole === "ADMIN"
+        ? "/admin"
+        : primaryRole === "STAFF" || primaryRole === "MANAGER"
+          ? "/staff"
+          : "/";
+
+    const canUseFromPath =
+      typeof fromPath === "string" &&
+      (fromPath.startsWith("/admin")
+        ? primaryRole === "ADMIN"
+        : fromPath.startsWith("/staff")
+          ? primaryRole === "ADMIN" ||
+            primaryRole === "STAFF" ||
+            primaryRole === "MANAGER"
+          : true);
+
+    navigate(canUseFromPath ? fromPath! : defaultTarget, { replace: true });
+  };
+
   const onSubmit = async (values: LoginFormValues) => {
     setSubmitError("");
 
@@ -40,39 +72,38 @@ export default function LoginPage() {
         values.account,
         values.password,
       );
-
-      setAccessToken(response.accessToken);
-      const payload = parseJwtPayload(response.accessToken);
-      const primaryRole = normalizeRole(payload?.primary_role);
-      toast.success("Đăng nhập thành công");
-
-      const fromPath = (
-        location.state as { from?: { pathname?: string } } | null
-      )?.from?.pathname;
-
-      const defaultTarget =
-        primaryRole === "ADMIN"
-          ? "/admin"
-          : primaryRole === "STAFF" || primaryRole === "MANAGER"
-            ? "/staff"
-            : "/";
-
-      const canUseFromPath =
-        typeof fromPath === "string" &&
-        (fromPath.startsWith("/admin")
-          ? primaryRole === "ADMIN"
-          : fromPath.startsWith("/staff")
-            ? primaryRole === "ADMIN" ||
-              primaryRole === "STAFF" ||
-              primaryRole === "MANAGER"
-            : true);
-
-      navigate(canUseFromPath ? fromPath! : defaultTarget, { replace: true });
+      handleLoginSuccess(response.accessToken);
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
           : "Đăng nhập thất bại, vui lòng thử lại.";
+      setSubmitError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    if (!firebaseAuth) {
+      toast.error("Hệ thống đăng nhập Google đang bảo trì.");
+      return;
+    }
+    setSubmitError("");
+    try {
+      setIsSubmitting(true);
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(firebaseAuth, provider);
+      const idToken = await result.user.getIdToken();
+      
+      const response = await loginWithGoogleToken(idToken);
+      handleLoginSuccess(response.accessToken);
+    } catch (error) {
+      console.error("Google login error:", error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Đăng nhập Google thất bại, vui lòng thử lại.";
       setSubmitError(message);
     } finally {
       setIsSubmitting(false);
@@ -216,6 +247,30 @@ export default function LoginPage() {
               {isSubmitting ? "ĐANG ĐĂNG NHẬP..." : "ĐĂNG NHẬP"}
             </button>
           </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Hoặc tiếp tục với</span>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={isSubmitting}
+                className="w-full flex justify-center items-center gap-3 py-3.5 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                <GoogleOutlined className="text-xl text-red-500" />
+                <span>Đăng nhập bằng Google</span>
+              </button>
+            </div>
+          </div>
+
           <div className="h-px bg-gray-100 w-full my-8"></div>
           <div className="text-center flex flex-col items-center">
             <span className="text-gray-500 text-sm mb-2">
