@@ -434,8 +434,13 @@ export default function CheckoutPage() {
     };
 
     try {
-      await createOrder(orderPayload);
+      const newOrder = await createOrder(orderPayload);
       window.dispatchEvent(new Event(ORDER_UPDATED_EVENT));
+
+      if (newOrder.payment_url) {
+        window.location.href = newOrder.payment_url;
+        return;
+      }
     } catch {
       setAddressError("Không thể lưu đơn hàng vào backend. Vui lòng thử lại.");
       return;
