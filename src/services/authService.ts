@@ -67,6 +67,30 @@ export async function loginWithEmailOrUsername(
   return normalized;
 }
 
+export async function loginWithGoogleToken(idToken: string): Promise<LoginResponse> {
+  if (!idToken) {
+    throw new Error("Không có token đăng nhập từ Google.");
+  }
+
+  let response: unknown;
+  try {
+    response = await axiosClient.post("/auth/google", {
+      id_token: idToken,
+    });
+  } catch (error) {
+    console.error("❌ Error during /auth/google request:", error);
+    throw error;
+  }
+
+  const normalized = normalizeLoginResponse(response);
+
+  if (!normalized.accessToken) {
+    throw new Error("Đăng nhập bằng Google thất bại. Backend không trả về token.");
+  }
+
+  return normalized;
+}
+
 export async function registerAccount(
   payload: RegisterPayload,
 ): Promise<ApiUser> {
