@@ -72,6 +72,10 @@ const cartSlice = createSlice({
     removeFromCart(state, action: PayloadAction<string>) {
       state.items = state.items.filter((item) => item.id !== action.payload);
     },
+    removeCartItems(state, action: PayloadAction<string[]>) {
+      const idsToRemove = new Set(action.payload);
+      state.items = state.items.filter((item) => !idsToRemove.has(item.id));
+    },
     clearCart(state) {
       state.items = [];
     },
@@ -89,6 +93,7 @@ export const {
   addToCart: addCartItem,
   updateCartQuantity: updateCartItemQuantity,
   removeFromCart,
+  removeCartItems,
   clearCart,
   setCheckoutSession,
   clearCheckoutSession,

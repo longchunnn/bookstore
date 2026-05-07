@@ -55,10 +55,10 @@ export async function updateOrderStatus(
   return normalizeOrder(unwrapResult(response));
 }
 
-export async function cancelOrder(orderId: string): Promise<ApiOrder> {
-  const response = await axiosClient.patch(
-    `/orders/${encodeURIComponent(orderId)}`,
-    { order_status: "Đã huỷ" },
+export async function cancelOrder(orderId: string, userId: string): Promise<ApiOrder> {
+  const response = await axiosClient.post(
+    `/orders/${encodeURIComponent(orderId)}/cancel`,
+    { user_id: userId },
   );
   return normalizeOrder(unwrapResult(response));
 }

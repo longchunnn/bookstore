@@ -98,8 +98,8 @@ export default function CartPage() {
   const claimedVouchers = useAppSelector(
     (state) => state.voucher.claimedVouchers as VoucherWalletItem[],
   );
-  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(
-    new Set(),
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string> | null>(
+    null,
   );
   const [selectedDiscountId, setSelectedDiscountId] = useState<string | null>(
     null,
@@ -118,13 +118,10 @@ export default function CartPage() {
   const effectiveSelectedItemIds = useMemo(() => {
     if (items.length === 0) return new Set<string>();
 
-    if (selectedItemIds.size === 0) {
-      return new Set(items.map((item) => item.id));
-    }
+    const baseSet =
+      selectedItemIds === null ? new Set(items.map((i) => i.id)) : selectedItemIds;
 
-    return new Set(
-      Array.from(selectedItemIds).filter((id) => itemIdSet.has(id)),
-    );
+    return new Set(Array.from(baseSet).filter((id) => itemIdSet.has(id)));
   }, [itemIdSet, items, selectedItemIds]);
 
   const keyword = useMemo(
@@ -284,9 +281,8 @@ export default function CartPage() {
 
   const handleToggleItem = (id: string, checked: boolean) => {
     setSelectedItemIds((prev) => {
-      const next = new Set(
-        prev.size === 0 ? Array.from(itemIdSet) : Array.from(prev),
-      );
+      const next =
+        prev === null ? new Set(items.map((i) => i.id)) : new Set(prev);
       if (checked) {
         next.add(id);
       } else {
@@ -298,9 +294,8 @@ export default function CartPage() {
 
   const handleToggleAllFiltered = (checked: boolean) => {
     setSelectedItemIds((prev) => {
-      const next = new Set(
-        prev.size === 0 ? Array.from(itemIdSet) : Array.from(prev),
-      );
+      const next =
+        prev === null ? new Set(items.map((i) => i.id)) : new Set(prev);
 
       filteredItems.forEach((item) => {
         if (checked) {
