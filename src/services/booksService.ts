@@ -4,7 +4,7 @@ import { unwrapPagedContent, unwrapResult } from "../utils/apiResponse";
 
 export async function getBooks(): Promise<ApiBook[]> {
   const response = await axiosClient.get("/books", {
-    params: { _page: 0, _limit: 100 },
+    params: { _page: 0, _limit: 100, _sort: "bookId", _order: "desc" },
   });
   return unwrapPagedContent<unknown>(response).map((entry) => normalizeBook(entry));
 }

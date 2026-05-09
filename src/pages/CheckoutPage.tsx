@@ -443,8 +443,8 @@ export default function CheckoutPage() {
       order_status: "Đang xử lý",
       orderStatus: "Đang xử lý",
       items: items.map((item) => ({
-        book_item_id: item.id,
-        bookItemId: item.id,
+        book_id: item.id,
+        bookId: item.id,
         title: item.title,
         unit_price: item.unitPrice,
         unitPrice: item.unitPrice,

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { CloudUploadOutlined } from "@ant-design/icons";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { CloudUploadOutlined, LoadingOutlined } from "@ant-design/icons";
 import { Modal } from "antd";
 import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -11,6 +11,7 @@ import {
   updateAdminBook,
 } from "../../features/adminBooks/adminBooksSlice";
 import { normalizeText } from "../../utils/textNormalize";
+import axiosClient from "../../services/axiosClient";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("vi-VN", {
@@ -83,6 +84,42 @@ export default function AdminBooksPage() {
   const [draft, setDraft] = useState<BookDraft>(getDefaultDraft());
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createDraft, setCreateDraft] = useState<BookDraft>(getDefaultDraft());
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    isEditMode: boolean
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response: any = await axiosClient.post("/upload/image", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const imageUrl = response?.result || response?.url;
+      if (imageUrl) {
+        if (isEditMode) {
+          setDraft((prev) => ({ ...prev, cover_image: imageUrl }));
+        } else {
+          setCreateDraft((prev) => ({ ...prev, cover_image: imageUrl }));
+        }
+        toast.success("Tải ảnh lên thành công!");
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Lỗi khi tải ảnh lên.");
+    } finally {
+      setUploadingImage(false);
+      event.target.value = "";
+    }
+  };
 
   useEffect(() => {
     void dispatch(fetchAdminBooks());
@@ -348,8 +385,20 @@ export default function AdminBooksPage() {
               />
             </label>
             <label className="space-y-1">
-              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Ảnh bìa (URL)
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Ảnh bìa (URL)
+                </div>
+                <label className="cursor-pointer text-xs font-semibold text-teal-600 hover:text-teal-800">
+                  {uploadingImage ? "Đang tải..." : "Tải ảnh lên"}
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => void handleImageUpload(e, true)}
+                    disabled={uploadingImage}
+                  />
+                </label>
               </div>
               <input
                 value={draft.cover_image}
@@ -451,8 +500,20 @@ export default function AdminBooksPage() {
               Ảnh bìa sách
             </div>
 
-            <div className="flex h-56 w-full items-center justify-center overflow-hidden rounded-2xl border border-dashed border-gray-200 bg-gray-50">
-              {createDraft.cover_image.trim() ? (
+            <label className="relative flex h-56 w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-gray-200 bg-gray-50 transition hover:bg-gray-100">
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*"
+                onChange={(e) => void handleImageUpload(e, false)}
+                disabled={uploadingImage}
+              />
+              {uploadingImage ? (
+                <div className="flex flex-col items-center justify-center text-teal-600">
+                  <LoadingOutlined className="mb-2 text-3xl" />
+                  <div className="text-sm font-semibold">Đang tải ảnh lên...</div>
+                </div>
+              ) : createDraft.cover_image.trim() ? (
                 <img
                   src={createDraft.cover_image.trim()}
                   alt={createDraft.title || "Cover"}
@@ -465,14 +526,14 @@ export default function AdminBooksPage() {
                     <CloudUploadOutlined className="text-xl" />
                   </div>
                   <div className="mt-3 text-sm font-semibold text-gray-600">
-                    Kéo thả ảnh hoặc dán link ảnh
+                    Bấm chọn ảnh hoặc dán link ảnh
                   </div>
                   <div className="mt-1 text-xs text-gray-400">
-                    Định dạng: JPG, PNG (URL)
+                    Định dạng: JPG, PNG
                   </div>
                 </div>
               )}
-            </div>
+            </label>
 
             <label className="space-y-1">
               <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
