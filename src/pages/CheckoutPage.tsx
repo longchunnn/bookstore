@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 import { CheckCircleOutlined } from "@ant-design/icons";
 import Header from "../components/layouts/Header";
 import Footer from "../components/layouts/Footer";
@@ -157,7 +156,7 @@ export default function CheckoutPage() {
     postalCode: "",
   });
   const [addressError, setAddressError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [successMessage] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [countdown, setCountdown] = useState(5);
 

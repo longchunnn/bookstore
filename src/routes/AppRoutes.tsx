@@ -10,7 +10,6 @@ import CheckoutPage from "../pages/CheckoutPage";
 import CheckoutOrderPage from "../pages/CheckoutOrderPage";
 import VNPayCallbackPage from "../pages/VNPayCallbackPage";
 import AccountPage from "../pages/AccountPage.tsx";
-import StaffDashboardPage from "../pages/StaffDashboardPage";
 import RequireStaff from "../components/guards/RequireStaff";
 import RequireAdmin from "../components/guards/RequireAdmin";
 import AdminLayout from "../components/layouts/AdminLayout/AdminLayout";
@@ -22,6 +21,12 @@ import {
   AdminStatsPage,
   AdminVouchersPage,
 } from "../pages/admin";
+import {
+  StaffBooksPage,
+  StaffChatPage,
+  StaffOrdersPage,
+  StaffSettingsPage,
+} from "../pages/staff";
 
 function ScrollToTop() {
   const { pathname, search } = useLocation();
@@ -50,7 +55,11 @@ export default function AppRoutes() {
         <Route path="/account" element={<AccountPage />} />
 
         <Route element={<RequireStaff />}>
-          <Route path="/staff" element={<StaffDashboardPage />} />
+          <Route path="/staff" element={<Navigate to="/staff/chat" replace />} />
+          <Route path="/staff/chat" element={<StaffChatPage />} />
+          <Route path="/staff/orders" element={<StaffOrdersPage />} />
+          <Route path="/staff/books" element={<StaffBooksPage />} />
+          <Route path="/staff/settings" element={<StaffSettingsPage />} />
         </Route>
 
         <Route element={<RequireAdmin />}>

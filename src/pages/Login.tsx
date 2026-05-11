@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { normalizeRole } from "../utils/roles";
+import { resolvePrimaryRole } from "../utils/roles";
 import { parseJwtPayload } from "../utils/jwt";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowRightOutlined, BookOutlined, GoogleOutlined } from "@ant-design/icons";
@@ -36,7 +36,7 @@ export default function LoginPage() {
   const handleLoginSuccess = (accessToken: string) => {
     setAccessToken(accessToken);
     const payload = parseJwtPayload(accessToken);
-    const primaryRole = normalizeRole(payload?.primary_role);
+    const primaryRole = resolvePrimaryRole(payload);
     toast.success("Đăng nhập thành công");
 
     const fromPath = (
@@ -45,20 +45,20 @@ export default function LoginPage() {
 
     const defaultTarget =
       primaryRole === "ADMIN"
-        ? "/admin"
+        ? "/admin/stats"
         : primaryRole === "STAFF" || primaryRole === "MANAGER"
-          ? "/staff"
+          ? "/staff/chat"
           : "/";
 
     const canUseFromPath =
       typeof fromPath === "string" &&
-      (fromPath.startsWith("/admin")
-        ? primaryRole === "ADMIN"
-        : fromPath.startsWith("/staff")
-          ? primaryRole === "ADMIN" ||
-            primaryRole === "STAFF" ||
-            primaryRole === "MANAGER"
-          : true);
+      (primaryRole === "ADMIN"
+        ? fromPath.startsWith("/admin")
+        : fromPath.startsWith("/admin")
+          ? false
+          : fromPath.startsWith("/staff")
+            ? primaryRole === "STAFF" || primaryRole === "MANAGER"
+            : true);
 
     navigate(canUseFromPath ? fromPath! : defaultTarget, { replace: true });
   };
