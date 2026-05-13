@@ -25,6 +25,7 @@ import {
   AdminVouchersPage,
   AdminSettingsPage,
   AdminReviewsPage,
+  AdminAccountsPage,
 } from "../pages/admin";
 import {
   StaffBooksPage,
@@ -78,6 +79,7 @@ export default function AppRoutes() {
             <Route path="books" element={<AdminBooksPage />} />
             <Route path="vouchers" element={<AdminVouchersPage />} />
             <Route path="reviews" element={<AdminReviewsPage />} />
+            <Route path="accounts" element={<AdminAccountsPage />} />
             <Route path="flash-sale" element={<AdminFlashSalePage />} />
             <Route
               path="flash-sale/new"

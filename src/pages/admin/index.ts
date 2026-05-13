@@ -6,3 +6,4 @@ export { default as AdminFlashSaleCreatePage } from "./AdminFlashSaleCreatePage"
 export { default as AdminFlashSaleSelectBooksPage } from "./AdminFlashSaleSelectBooksPage";
 export { default as AdminSettingsPage } from "./AdminSettingsPage";
 export { default as AdminReviewsPage } from "./AdminReviewsPage";
+export { default as AdminAccountsPage } from "./AdminAccountsPage";

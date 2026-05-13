@@ -11,6 +11,9 @@ export async function getUserById(userId: string): Promise<ApiUser | null> {
 export async function getUsersForStaff(params?: {
   page?: number;
   limit?: number;
+  roleId?: number;
+  status?: number;
+  q?: string;
 }): Promise<ApiUser[]> {
   const response = await axiosClient.get("/users", {
     params: {
@@ -18,7 +21,38 @@ export async function getUsersForStaff(params?: {
       _limit: params?.limit ?? 100,
       _sort: "userId",
       _order: "desc",
+      role_id: params?.roleId,
+      status: params?.status,
+      q: params?.q?.trim() || undefined,
     },
   });
   return unwrapPagedContent<unknown>(response).map((entry) => normalizeUser(entry));
+}
+
+export type UserAccountPayload = {
+  username?: string;
+  password?: string;
+  role_id?: number;
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  total_points?: number;
+  status?: number;
+};
+
+export async function createUserAccount(payload: UserAccountPayload): Promise<ApiUser> {
+  const response = await axiosClient.post("/users", payload);
+  return normalizeUser(unwrapResult(response));
+}
+
+export async function updateUserAccount(
+  userId: string,
+  payload: UserAccountPayload,
+): Promise<ApiUser> {
+  const response = await axiosClient.patch(
+    `/users/${encodeURIComponent(userId)}`,
+    payload,
+  );
+  return normalizeUser(unwrapResult(response));
 }

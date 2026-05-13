@@ -171,10 +171,7 @@ export default function AdminBooksPage() {
     setPage((current) => Math.min(Math.max(1, current), totalPages));
   }, [totalPages]);
 
-  const paginatedBooks = useMemo(() => {
-    const startIndex = (page - 1) * ITEMS_PER_PAGE;
-    return filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filtered, page]);
+
 
   const editingBook = useMemo(
     () => (editingId ? (books.find((b) => b.id === editingId) ?? null) : null),
@@ -377,18 +374,7 @@ export default function AdminBooksPage() {
             />
           </div>
         )}
-
-        {filtered.length > 0 ? (
-          <div className="mt-5 flex items-center justify-end">
-            <Pagination
-              current={Math.min(page, totalPages)}
-              pageSize={ITEMS_PER_PAGE}
-              total={filtered.length}
-              onChange={(nextPage) => setPage(nextPage)}
-              showSizeChanger={false}
-            />
-          </div>
-        ) : null}
+        
       </div>
 
       <Modal

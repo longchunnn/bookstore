@@ -263,14 +263,6 @@ export default function HomePage() {
     [books, ratingMap],
   );
 
-  const classicBooks = useMemo(
-    () =>
-      books
-        .filter((book) => book.category_name === "Tiểu thuyết")
-        .slice(0, 6)
-        .map((book) => mapBook(book, ratingMap.get(String(book.id)))),
-    [books, ratingMap],
-  );
 
   const scienceBooks = useMemo(
     () =>
@@ -409,14 +401,6 @@ export default function HomePage() {
               ))}
             </div>
           </section>
-
-          {!loading ? (
-            <BookSlider
-              title="Sách văn học kinh điển"
-              books={classicBooks}
-              viewAllTo="/search?category=Tiểu+thuyết"
-            />
-          ) : null}
 
           {!loading ? (
             <BookSlider

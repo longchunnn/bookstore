@@ -43,7 +43,6 @@ const MAX_ACTIVE_CHATS = 999;
 const STAFF_ORDERS_PAGE_SIZE = 10;
 const STAFF_BOOKS_PAGE_SIZE = 9;
 const DEFAULT_CHAT_TAGS = ["Gấp", "Đơn hàng", "Tư vấn sách", "Khiếu nại", "VIP"];
-const ORDER_TAGS = ["Gấp", "Cần gọi", "VIP", "Địa chỉ khó", "Thanh toán"];
 const ORDER_STATUS_OPTIONS = [
   { value: "Chờ duyệt", label: "Chờ duyệt" },
   { value: "Đã duyệt", label: "Đã duyệt" },
@@ -503,8 +502,6 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
 
   const [orderQuery, setOrderQuery] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
-  const [orderTagFilter, setOrderTagFilter] = useState("all");
-  const [orderTagsById, setOrderTagsById] = useState<Record<string, string[]>>({});
   const [orderPage, setOrderPage] = useState(1);
 
   const [bookQuery, setBookQuery] = useState("");
@@ -554,21 +551,8 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
   }, []);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("staff_order_tags");
-      if (raw) setOrderTagsById(JSON.parse(raw));
-    } catch {
-      setOrderTagsById({});
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("staff_order_tags", JSON.stringify(orderTagsById));
-  }, [orderTagsById]);
-
-  useEffect(() => {
     setOrderPage(1);
-  }, [orderQuery, orderStatusFilter, orderTagFilter]);
+  }, [orderQuery, orderStatusFilter]);
 
   useEffect(() => {
     setBookPage(1);
@@ -804,7 +788,6 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
     const query = normalizeText(orderQuery);
     return orders.filter((order) => {
       const customer = customersById[order.user_id];
-      const tags = orderTagsById[order.id] ?? [];
       const searchText = [
         order.id,
         order.user_id,
@@ -815,7 +798,6 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
         order.payment_method,
         getOrderStatusLabel(order.order_status),
         ...order.items.map((item) => item.title),
-        ...tags,
       ]
         .map(normalizeText)
         .join(" ");
@@ -823,11 +805,10 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
       return (
         (!query || searchText.includes(query)) &&
         (orderStatusFilter === "all" ||
-          getOrderStatusValue(order.order_status) === orderStatusFilter) &&
-        (orderTagFilter === "all" || tags.includes(orderTagFilter))
+          getOrderStatusValue(order.order_status) === orderStatusFilter)
       );
     });
-  }, [customersById, orderQuery, orderStatusFilter, orderTagFilter, orderTagsById, orders]);
+  }, [customersById, orderQuery, orderStatusFilter, orders]);
 
   const orderTotalPages = Math.max(
     1,
@@ -921,16 +902,6 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
           : "Không cập nhật được đơn hàng.",
       );
     }
-  }
-
-  function toggleOrderTag(orderId: string, tag: string) {
-    setOrderTagsById((current) => {
-      const tags = current[orderId] ?? [];
-      const next = tags.includes(tag)
-        ? tags.filter((item) => item !== tag)
-        : [...tags, tag];
-      return { ...current, [orderId]: next };
-    });
   }
 
   async function setConversationTags(conversation: ChatConversation, nextTags: string[]) {
@@ -1559,7 +1530,7 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
             </span>
           </div>
 
-          <div className="mb-4 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr,13rem,13rem]">
+          <div className="mb-4 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr,13rem]">
             <label className="relative block">
               <SearchOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -1583,18 +1554,6 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
               ))}
             </select>
 
-            <select
-              value={orderTagFilter}
-              onChange={(event) => setOrderTagFilter(event.target.value)}
-              className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-500"
-            >
-              <option value="all">Tất cả thẻ</option>
-              {ORDER_TAGS.map((tag) => (
-                <option key={tag} value={tag}>
-                  {tag}
-                </option>
-              ))}
-            </select>
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -1606,14 +1565,12 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
                   <th className="px-4 py-3">Sản phẩm</th>
                   <th className="px-4 py-3">Tổng tiền</th>
                   <th className="px-4 py-3">Trạng thái</th>
-                  <th className="px-4 py-3">Thẻ xử lý</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-slate-100">
                 {paginatedOrders.map((order) => {
                   const customer = customersById[order.user_id];
-                  const tags = orderTagsById[order.id] ?? [];
                   const canApproveOrder = canStaffApproveOrder(order);
                   const statusOptionsForOrder = canApproveOrder
                     ? ORDER_STATUS_OPTIONS.filter((status) =>
@@ -1681,19 +1638,6 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
                         </select>
                       </td>
 
-                      <td className="px-4 py-4">
-                        <div className="flex max-w-64 flex-wrap gap-2">
-                          {ORDER_TAGS.map((tag) => (
-                            <TagButton
-                              key={tag}
-                              active={tags.includes(tag)}
-                              onClick={() => toggleOrderTag(order.id, tag)}
-                            >
-                              {tag}
-                            </TagButton>
-                          ))}
-                        </div>
-                      </td>
                     </tr>
                   );
                 })}

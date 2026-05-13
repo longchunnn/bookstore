@@ -15,6 +15,7 @@ import {
   StarOutlined,
   ThunderboltOutlined,
   TagOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import { Input } from "antd";
 import { useEffect, useMemo, useState } from "react";
@@ -42,6 +43,11 @@ const navItems = [
     to: "/admin/reviews",
     label: "Duyệt đánh giá",
     icon: <StarOutlined />,
+  },
+  {
+    to: "/admin/accounts",
+    label: "Quản lý tài khoản",
+    icon: <TeamOutlined />,
   },
   {
     to: "/admin/flash-sale",

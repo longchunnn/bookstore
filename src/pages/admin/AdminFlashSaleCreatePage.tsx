@@ -206,11 +206,6 @@ export default function AdminFlashSaleCreatePage() {
     );
   }, [books]);
 
-  const selectedBook = useMemo(() => {
-    const firstId = draft.selectedBookIds[0];
-    return firstId ? (bookById.get(String(firstId)) ?? null) : null;
-  }, [bookById, draft.selectedBookIds]);
-
   const selectedBooks = useMemo(() => {
     return draft.selectedBookIds
       .map((id) => bookById.get(String(id)))
@@ -224,32 +219,6 @@ export default function AdminFlashSaleCreatePage() {
   const endIso = useMemo(() => {
     return toIsoWithOffset(draft.time.date, draft.time.endTime);
   }, [draft.time.date, draft.time.endTime]);
-
-  const previewBookConfig = useMemo(() => {
-    if (!selectedBook) return null;
-    const raw = draft.itemConfigByBookId[String(selectedBook.id)];
-    return {
-      flash_price: raw?.flash_price ?? "",
-      flash_stock: raw?.flash_stock ?? "50",
-      purchase_limit: raw?.purchase_limit ?? "2",
-      afterStatus: "restore",
-    };
-  }, [draft.itemConfigByBookId, selectedBook]);
-
-  const previewFlashPrice = useMemo(() => {
-    return Number(previewBookConfig?.flash_price || 0);
-  }, [previewBookConfig?.flash_price]);
-
-  const previewFlashStock = useMemo(() => {
-    return clampNonNegativeInt(previewBookConfig?.flash_stock || "", 0);
-  }, [previewBookConfig?.flash_stock]);
-
-  const previewPurchaseLimit = useMemo(() => {
-    return Math.max(
-      1,
-      clampNonNegativeInt(previewBookConfig?.purchase_limit || "", 1),
-    );
-  }, [previewBookConfig?.purchase_limit]);
 
   const handleNext = () => {
     if (draft.step === 1) {
@@ -665,7 +634,7 @@ export default function AdminFlashSaleCreatePage() {
                     const raw = draft.itemConfigByBookId[bookId];
                     const config: PriceDraft = {
                       flash_price: raw?.flash_price ?? "",
-                      flash_stock: raw?.flash_stock ?? "50",
+                      flash_stock: raw?.flash_stock ?? "0",
                       purchase_limit: raw?.purchase_limit ?? "2",
                       afterStatus: "restore",
                     };
@@ -858,70 +827,6 @@ export default function AdminFlashSaleCreatePage() {
                   {draft.time.startTime || "—"} — {draft.time.endTime || "—"}
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="text-xs font-extrabold uppercase tracking-wide text-gray-500">
-              Xem trước hiển thị
-            </div>
-
-            <div className="mt-3 overflow-hidden rounded-2xl border border-gray-200">
-              <div className="bg-gray-50 p-3">
-                <div className="text-[11px] font-extrabold text-rose-600">
-                  FLASH SALE
-                </div>
-              </div>
-
-              <div className="flex gap-3 p-3">
-                <div className="h-16 w-14 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-                  {selectedBook?.cover_image ? (
-                    <img
-                      src={selectedBook.cover_image}
-                      alt={selectedBook.title}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : null}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-extrabold text-gray-900">
-                    {selectedBook?.title || "Chưa chọn sách"}
-                  </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    <div className="text-sm font-extrabold text-rose-600">
-                      {previewFlashPrice
-                        ? formatCurrency(previewFlashPrice)
-                        : "—"}
-                    </div>
-                    {selectedBook ? (
-                      <div className="text-xs text-gray-400 line-through">
-                        {formatCurrency(selectedBook.selling_price)}
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className="mt-1 text-xs text-gray-500">
-                    {previewFlashStock ? `Còn ${previewFlashStock} suất` : ""}
-                    {previewFlashStock && previewPurchaseLimit
-                      ? ` • Giới hạn ${previewPurchaseLimit}/user`
-                      : ""}
-                  </div>
-
-                  {draft.selectedBookIds.length > 1 ? (
-                    <div className="mt-1 text-[11px] font-semibold text-gray-500">
-                      +{draft.selectedBookIds.length - 1} sản phẩm khác
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-3 text-xs text-gray-500">
-              {draft.time.campaignName.trim()
-                ? draft.time.campaignName.trim()
-                : ""}
             </div>
           </div>
         </div>
