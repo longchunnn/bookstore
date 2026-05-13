@@ -156,6 +156,7 @@ export default function CheckoutPage() {
     postalCode: "",
   });
   const [addressError, setAddressError] = useState("");
+  const [successMessage] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [countdown, setCountdown] = useState(5);
 
@@ -693,6 +694,12 @@ export default function CheckoutPage() {
           >
             Hoàn tất thanh toán
           </button>
+
+          {successMessage ? (
+            <div className="mt-3 border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              {successMessage}
+            </div>
+          ) : null}
 
           <button
             type="button"

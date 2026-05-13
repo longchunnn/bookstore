@@ -1,6 +1,6 @@
 import axios from "axios";
 import { isJwtExpired, parseJwtPayload } from "../utils/jwt";
-import { normalizeRole } from "../utils/roles";
+import { resolvePrimaryRole, resolveRoles } from "../utils/roles";
 import { getStoreRef } from "../app/storeRef";
 import { clearSession, hydrateSession } from "../features/session/sessionSlice";
 import {
@@ -22,23 +22,6 @@ const baseURL =
     import.meta.env &&
     import.meta.env.VITE_API_BASE_URL) ||
   DEFAULT_BASE_URL;
-
-function normalizeRoles(raw: unknown, primaryRole = ""): string[] {
-  const roles = Array.isArray(raw)
-    ? raw
-        .map((value) => normalizeRole(value))
-        .filter(Boolean)
-        .map((value) => `ROLE_${value}`)
-    : [];
-
-  const normalizedPrimaryRole = normalizeRole(primaryRole);
-  if (normalizedPrimaryRole) {
-    const entry = `ROLE_${normalizedPrimaryRole}`;
-    if (!roles.includes(entry)) roles.push(entry);
-  }
-
-  return roles;
-}
 
 export function getAccessToken(): string | null {
   const store = getStoreRef();
@@ -87,8 +70,8 @@ export function setAccessToken(token: string | null): void {
   const username =
     typeof payload?.username === "string" ? payload.username : "";
   const email = typeof payload?.email === "string" ? payload.email : "";
-  const primaryRole = normalizeRole(payload?.primary_role);
-  const roles = normalizeRoles(payload?.roles, primaryRole);
+  const primaryRole = resolvePrimaryRole(payload);
+  const roles = resolveRoles(payload, primaryRole);
   const displayName = fullName || username;
 
   const profileFormRaw = localStorage.getItem(

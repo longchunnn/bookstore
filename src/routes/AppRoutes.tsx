@@ -10,7 +10,7 @@ import CheckoutPage from "../pages/CheckoutPage";
 import CheckoutOrderPage from "../pages/CheckoutOrderPage";
 import VNPayCallbackPage from "../pages/VNPayCallbackPage";
 import AccountPage from "../pages/AccountPage.tsx";
-import StaffDashboardPage from "../pages/StaffDashboardPage";
+// import StaffDashboardPage from "../pages/StaffDashboardPage";
 import FlashSalePage from "../pages/FlashSalePage";
 import FlashSaleCountdownPage from "../pages/FlashSaleCountdownPage";
 import RequireStaff from "../components/guards/RequireStaff";
@@ -24,6 +24,12 @@ import {
   AdminStatsPage,
   AdminVouchersPage,
 } from "../pages/admin";
+import {
+  StaffBooksPage,
+  StaffChatPage,
+  StaffOrdersPage,
+  StaffSettingsPage,
+} from "../pages/staff";
 
 function ScrollToTop() {
   const { pathname, search } = useLocation();
@@ -50,13 +56,17 @@ export default function AppRoutes() {
         <Route path="/checkout/:id" element={<CheckoutOrderPage />} />
         <Route path="/payment/vnpay-callback" element={<VNPayCallbackPage />} />
         <Route path="/account" element={<AccountPage />} />
-        
+
         {/* Flash Sale routes */}
         <Route path="/flash-sale" element={<FlashSalePage />} />
         <Route path="/flash-sale/countdown/:reservationId" element={<FlashSaleCountdownPage />} />
 
         <Route element={<RequireStaff />}>
-          <Route path="/staff" element={<StaffDashboardPage />} />
+          <Route path="/staff" element={<Navigate to="/staff/chat" replace />} />
+          <Route path="/staff/chat" element={<StaffChatPage />} />
+          <Route path="/staff/orders" element={<StaffOrdersPage />} />
+          <Route path="/staff/books" element={<StaffBooksPage />} />
+          <Route path="/staff/settings" element={<StaffSettingsPage />} />
         </Route>
 
         <Route element={<RequireAdmin />}>

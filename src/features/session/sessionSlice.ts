@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { isJwtExpired, parseJwtPayload } from "../../utils/jwt";
-import { normalizeRole } from "../../utils/roles";
+import { normalizeRole, resolvePrimaryRole, resolveRoles } from "../../utils/roles";
 
 export type UserRecord = {
   id: string;
@@ -156,8 +156,8 @@ function loadInitialSession(): SessionState {
     typeof payload?.username === "string" ? payload.username : "";
   const email = typeof payload?.email === "string" ? payload.email : "";
   const displayName = fullName || username;
-  const primaryRole = normalizeRole(payload?.primary_role);
-  const roles = normalizeRoles(payload?.roles, primaryRole);
+  const primaryRole = resolvePrimaryRole(payload);
+  const roles = resolveRoles(payload, primaryRole);
   const profileForm = readJson<ProfileForm>(
     getStorageKey("bookstore_profile_form", userId),
     getDefaultProfileForm({ id: userId, username, email, full_name: fullName }),
