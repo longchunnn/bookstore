@@ -18,3 +18,32 @@
 	color: #0f766e;
 	opacity: 0.9;
 }
+
+/* Ant Design Pagination - teal border */
+.ant-pagination .ant-pagination-item,
+.ant-pagination .ant-pagination-prev .ant-pagination-item-link,
+.ant-pagination .ant-pagination-next .ant-pagination-item-link {
+	border-color: #0f766e !important;
+}
+
+.ant-pagination .ant-pagination-item a {
+	color: inherit;
+}
+
+.ant-pagination .ant-pagination-item:hover,
+.ant-pagination .ant-pagination-prev:hover .ant-pagination-item-link,
+.ant-pagination .ant-pagination-next:hover .ant-pagination-item-link {
+	border-color: #0f766e !important;
+}
+
+.ant-pagination .ant-pagination-item:hover a {
+	color: #0f766e !important;
+}
+
+.ant-pagination .ant-pagination-item-active {
+	border-color: #0f766e !important;
+}
+
+.ant-pagination .ant-pagination-item-active a {
+	color: #0f766e !important;
+}

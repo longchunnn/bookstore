@@ -420,7 +420,7 @@ export default function BookDetailPage() {
                 ) : null}
 
                 <div className="mt-4 text-sm text-gray-500">
-                  Đã bán: {book.sold_count} • Đã thuê: {book.rental_count}
+                  Đã bán: {book.sold_count}
                 </div>
 
                 <div className="mt-2 text-sm font-medium text-emerald-700">

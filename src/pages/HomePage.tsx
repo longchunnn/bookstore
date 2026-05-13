@@ -261,15 +261,6 @@ export default function HomePage() {
     [books, ratingMap],
   );
 
-  const learningBooks = useMemo(
-    () =>
-      books
-        .filter((book) => book.category_name === "Học tập")
-        .slice(0, 6)
-        .map((book) => mapBook(book, ratingMap.get(String(book.id)))),
-    [books, ratingMap],
-  );
-
   const classicBooks = useMemo(
     () =>
       books
@@ -323,6 +314,10 @@ export default function HomePage() {
       return;
     }
 
+    const promotion = availablePromotions.find(
+      (item) => String(item.id) === String(voucher.id),
+    );
+
     dispatch(
       claimVoucherAction({
         id: voucher.id,
@@ -332,6 +327,7 @@ export default function HomePage() {
         discount_percent: voucher.discount_percent,
         applies_to_categories: voucher.applies_to_categories,
         voucher_type: voucher.voucher_type || "discount",
+        expires_at: promotion?.valid_to,
       }),
     );
 
@@ -411,14 +407,6 @@ export default function HomePage() {
               ))}
             </div>
           </section>
-
-          {!loading ? (
-            <BookSlider
-              title="Sách kỹ năng sống"
-              books={learningBooks}
-              viewAllTo="/search?category=Học+tập"
-            />
-          ) : null}
 
           {!loading ? (
             <BookSlider

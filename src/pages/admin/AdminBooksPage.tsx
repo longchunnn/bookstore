@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CloudUploadOutlined, LoadingOutlined } from "@ant-design/icons";
-import { Modal } from "antd";
+import { Modal, Pagination } from "antd";
 import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import type { ApiBook } from "../../utils/apiMappers";
@@ -67,6 +67,8 @@ function formatVnThousands(raw: string): string {
   }).format(numeric);
 }
 
+const ITEMS_PER_PAGE = 5;
+
 export default function AdminBooksPage() {
   const dispatch = useAppDispatch();
   const location = useLocation();
@@ -85,10 +87,11 @@ export default function AdminBooksPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createDraft, setCreateDraft] = useState<BookDraft>(getDefaultDraft());
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [page, setPage] = useState(1);
 
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
-    isEditMode: boolean
+    isEditMode: boolean,
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -133,6 +136,10 @@ export default function AdminBooksPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
+
   const filtered = useMemo(() => {
     const q = normalizeText(query);
     if (!q) return books;
@@ -147,6 +154,19 @@ export default function AdminBooksPage() {
       ).includes(q),
     );
   }, [books, query]);
+
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  }, [filtered.length]);
+
+  useEffect(() => {
+    setPage((current) => Math.min(Math.max(1, current), totalPages));
+  }, [totalPages]);
+
+  const paginatedBooks = useMemo(() => {
+    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filtered, page]);
 
   const editingBook = useMemo(
     () => (editingId ? (books.find((b) => b.id === editingId) ?? null) : null),
@@ -243,7 +263,9 @@ export default function AdminBooksPage() {
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div className="text-sm font-semibold text-gray-500">
-            {loading ? "Đang tải..." : `${filtered.length} sách`}
+            {loading
+              ? "Đang tải..."
+              : `${filtered.length} sách • Trang ${Math.min(page, totalPages)}/${totalPages}`}
           </div>
           {query.trim() ? (
             <div className="text-xs font-semibold text-gray-400">
@@ -254,29 +276,40 @@ export default function AdminBooksPage() {
         </div>
 
         <div className="mt-4 divide-y divide-gray-100">
-          {filtered.map((book) => (
+          {paginatedBooks.map((book) => (
             <div
               key={book.id}
-              className="grid gap-3 py-4 lg:grid-cols-[1.2fr,0.8fr,0.5fr,auto] lg:items-center"
+              className="flex flex-col gap-4 py-4 lg:flex-row lg:items-start lg:justify-between"
             >
-              <div className="flex gap-3">
+              <div className="flex gap-5">
                 <img
                   src={book.cover_image}
                   alt={book.title}
-                  className="h-20 w-14 rounded-lg border border-gray-100 object-cover"
+                  className="h-60 w-44 shrink-0 rounded-xl border border-gray-100 object-cover"
                   loading="lazy"
                 />
-                <div className="min-w-0">
+                <div className="min-w-0 py-1">
                   <div
-                    className="truncate text-base font-semibold text-teal-900"
+                    className="truncate text-lg font-semibold text-teal-900"
                     title={book.title}
                   >
                     {book.title}
                   </div>
-                  <div className="mt-1 text-sm text-gray-500">
-                    {book.author_name} • {book.category_name}
+                  <div className="mt-2 space-y-1 text-sm text-gray-600">
+                    <div className="truncate" title={book.author_name}>
+                      <span className="font-semibold text-gray-500">
+                        Tác giả:
+                      </span>{" "}
+                      {book.author_name || "-"}
+                    </div>
+                    <div className="truncate" title={book.category_name}>
+                      <span className="font-semibold text-gray-500">
+                        Thể loại:
+                      </span>{" "}
+                      {book.category_name || "-"}
+                    </div>
                   </div>
-                  <div className="mt-1 text-sm font-semibold text-gray-700">
+                  <div className="mt-3 text-base font-semibold text-gray-800">
                     {formatCurrency(book.selling_price)}
                     <span className="ml-2 text-xs text-gray-400 line-through">
                       {formatCurrency(book.original_price)}
@@ -285,33 +318,35 @@ export default function AdminBooksPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-sm md:max-w-sm">
-                <div className="rounded-xl bg-gray-50 px-3 py-2">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Tồn kho
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-end">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-xl border border-black bg-white px-3 py-2">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Tồn kho
+                    </div>
+                    <div className="mt-1 font-bold text-gray-800">
+                      {book.total_stock ?? 0}
+                    </div>
                   </div>
-                  <div className="mt-1 font-bold text-gray-800">
-                    {book.total_stock ?? 0}
+                  <div className="rounded-xl border border-black bg-white px-3 py-2">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Đã bán
+                    </div>
+                    <div className="mt-1 font-bold text-gray-800">
+                      {book.sold_count ?? 0}
+                    </div>
                   </div>
                 </div>
-                <div className="rounded-xl bg-gray-50 px-3 py-2">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Đã bán
-                  </div>
-                  <div className="mt-1 font-bold text-gray-800">
-                    {book.sold_count ?? 0}
-                  </div>
-                </div>
-              </div>
 
-              <div className="flex justify-start lg:justify-end">
-                <button
-                  type="button"
-                  onClick={() => openEdit(book)}
-                  className="rounded-2xl border border-teal-200 px-4 py-2 text-sm font-semibold text-teal-700 transition hover:bg-teal-50"
-                >
-                  Chỉnh sửa
-                </button>
+                <div className="flex justify-start lg:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => openEdit(book)}
+                    className="rounded-2xl border border-teal-200 px-4 py-2 text-sm font-semibold text-teal-700 transition hover:bg-teal-50"
+                  >
+                    Chỉnh sửa
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -322,6 +357,18 @@ export default function AdminBooksPage() {
             </div>
           ) : null}
         </div>
+
+        {filtered.length > 0 ? (
+          <div className="mt-5 flex items-center justify-end">
+            <Pagination
+              current={Math.min(page, totalPages)}
+              pageSize={ITEMS_PER_PAGE}
+              total={filtered.length}
+              onChange={(nextPage) => setPage(nextPage)}
+              showSizeChanger={false}
+            />
+          </div>
+        ) : null}
       </div>
 
       <Modal
@@ -511,7 +558,9 @@ export default function AdminBooksPage() {
               {uploadingImage ? (
                 <div className="flex flex-col items-center justify-center text-teal-600">
                   <LoadingOutlined className="mb-2 text-3xl" />
-                  <div className="text-sm font-semibold">Đang tải ảnh lên...</div>
+                  <div className="text-sm font-semibold">
+                    Đang tải ảnh lên...
+                  </div>
                 </div>
               ) : createDraft.cover_image.trim() ? (
                 <img

@@ -38,7 +38,7 @@ export default function BookSlider({ title, books, viewAllTo }: Props) {
             key={b.id}
             className="flex-none w-[80vw] sm:w-[45vw] lg:w-[calc(25%-12px)] snap-start"
           >
-            <BookCard data={b} />
+            <BookCard data={b} imageHeightClassName="h-[18.2rem]" />
           </div>
         ))}
       </div>
