@@ -13,6 +13,7 @@ const STATUS_TABS: { value: ReviewStatus; label: string }[] = [
   { value: "rejected", label: "Từ chối" },
   { value: "all", label: "Tất cả" },
 ];
+const REVIEWS_PAGE_SIZE = 8;
 
 function formatStatus(status: number): string {
   if (status === 1) return "Đã duyệt";
@@ -48,11 +49,18 @@ export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<ApiReview[]>([]);
   const [loading, setLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const pendingCount = useMemo(
     () => reviews.filter((review) => review.is_approved === 0).length,
     [reviews],
   );
+  const totalPages = Math.max(1, Math.ceil(reviews.length / REVIEWS_PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const visibleReviews = useMemo(() => {
+    const start = (safeCurrentPage - 1) * REVIEWS_PAGE_SIZE;
+    return reviews.slice(start, start + REVIEWS_PAGE_SIZE);
+  }, [reviews, safeCurrentPage]);
 
   async function loadReviews(nextStatus = status) {
     try {
@@ -69,6 +77,7 @@ export default function AdminReviewsPage() {
 
   useEffect(() => {
     void loadReviews(status);
+    setCurrentPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
@@ -127,7 +136,7 @@ export default function AdminReviewsPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {reviews.map((review) => (
+            {visibleReviews.map((review) => (
               <article key={review.id} className="p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -182,6 +191,51 @@ export default function AdminReviewsPage() {
           </div>
         )}
       </section>
+
+      {reviews.length > REVIEWS_PAGE_SIZE ? (
+        <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600 md:flex-row md:items-center md:justify-between">
+          <span>
+            Hiển thị{" "}
+            <b>{(safeCurrentPage - 1) * REVIEWS_PAGE_SIZE + 1}</b>-
+            <b>{Math.min(safeCurrentPage * REVIEWS_PAGE_SIZE, reviews.length)}</b>{" "}
+            / <b>{reviews.length}</b> đánh giá
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={safeCurrentPage <= 1}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 font-semibold text-gray-600 transition hover:border-teal-600 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Trước
+            </button>
+            {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+              (page) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={`h-9 min-w-9 rounded-lg border px-3 text-sm font-bold transition ${
+                    page === safeCurrentPage
+                      ? "border-teal-700 bg-teal-700 text-white"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-teal-600 hover:text-teal-700"
+                  }`}
+                >
+                  {page}
+                </button>
+              ),
+            )}
+            <button
+              type="button"
+              disabled={safeCurrentPage >= totalPages}
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 font-semibold text-gray-600 transition hover:border-teal-600 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Sau
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
