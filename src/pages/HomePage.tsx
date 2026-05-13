@@ -236,7 +236,9 @@ export default function HomePage() {
             coverSrc: book.cover_image,
             rating: ratingMap.get(String(book.id))?.average,
             ratingCount: ratingMap.get(String(book.id))?.count,
-            flashMeta: `Con lai ${item.flash_stock} suat • Gioi han ${item.purchase_limit}`,
+            flashMeta: item.sold_out
+              ? "Đã hết hàng"
+              : `Còn lại ${item.flash_stock} suất • Đã bán ${item.sold_quantity}`,
           };
         })
         .filter(Boolean) as BookCardData[],

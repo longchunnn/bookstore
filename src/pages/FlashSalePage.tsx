@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import type {
@@ -23,6 +23,42 @@ export default function FlashSalePage() {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<FlashSaleActiveItem | null>(null);
   const [address, setAddress] = useState((user as { address?: string })?.address || "");
+  const [countdown, setCountdown] = useState(300); // 5 minutes in seconds
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Countdown timer for modal
+  useEffect(() => {
+    if (showAddressModal) {
+      setCountdown(300);
+      countdownRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(countdownRef.current!);
+            setShowAddressModal(false);
+            toast.warning("Hết thời gian! Vui lòng thử lại.");
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+        countdownRef.current = null;
+      }
+    }
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+      }
+    };
+  }, [showAddressModal]);
+
+  const formatCountdown = useCallback((seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }, []);
 
   // Load campaigns
   useEffect(() => {
@@ -186,7 +222,7 @@ export default function FlashSalePage() {
               Flash Sale
             </h1>
             <p className="text-red-100 mt-1">
-              Giá sốc giới hạn - Cập nhật số lượng theo thời gian thực
+              Ưu đãi sách cực hot – nhanh tay trước khi hết hàng
             </p>
           </div>
         </div>
@@ -288,19 +324,18 @@ export default function FlashSalePage() {
                         disabled={
                           item.sold_out || item.is_purchased || reservingId === item.flash_sale_item_id
                         }
-                        className={`w-full py-2.5 rounded font-bold transition-colors ${
-                          item.sold_out || item.is_purchased
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            : "bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg"
-                        }`}
+                        className={`w-full py-2.5 rounded font-bold transition-colors ${item.sold_out || item.is_purchased
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg"
+                          }`}
                       >
                         {reservingId === item.flash_sale_item_id
                           ? "Đang xử lý..."
                           : item.is_purchased
-                          ? "BẠN ĐÃ MUA"
-                          : item.sold_out
-                          ? "HẾT HÀNG"
-                          : "MUA NGAY"}
+                            ? "BẠN ĐÃ MUA"
+                            : item.sold_out
+                              ? "HẾT HÀNG"
+                              : "MUA NGAY"}
                       </button>
                     </div>
                   </div>
@@ -312,16 +347,45 @@ export default function FlashSalePage() {
 
         {/* Address Modal */}
         {showAddressModal && selectedItem && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-              <div className="bg-red-500 px-6 py-4">
-                <h3 className="text-white text-lg font-bold">Xác nhận mua</h3>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{
+              background: "linear-gradient(135deg, rgba(239,68,68,0.18) 0%, rgba(249,115,22,0.14) 40%, rgba(255,255,255,0.55) 100%)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+            }}
+            onClick={() => setShowAddressModal(false)}
+          >
+            <div
+              className="w-full max-w-md overflow-hidden rounded-2xl"
+              style={{
+                background: "rgba(255,255,255,0.92)",
+                boxShadow: "0 25px 60px rgba(239,68,68,0.18), 0 8px 24px rgba(0,0,0,0.10)",
+                border: "1px solid rgba(255,255,255,0.7)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header with gradient */}
+              <div
+                className="px-6 py-4 flex items-center space-x-3"
+                style={{
+                  background: "linear-gradient(135deg, #ef4444 0%, #f97316 100%)",
+                }}
+              >
+                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h3 className="text-white text-lg font-bold tracking-wide">Xác nhận mua</h3>
               </div>
+
               <div className="p-6">
-                <div className="flex space-x-4 mb-6 pb-6 border-b">
+                {/* Product info */}
+                <div className="flex space-x-4 mb-6 pb-6 border-b border-gray-200/80">
                   <img
                     src={selectedItem.cover_image || "/placeholder.jpg"}
-                    className="w-20 h-28 object-cover rounded"
+                    className="w-20 h-28 object-cover rounded-lg shadow-sm"
                     alt=""
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -330,10 +394,10 @@ export default function FlashSalePage() {
                     }}
                   />
                   <div>
-                    <h4 className="font-semibold line-clamp-2">
+                    <h4 className="font-semibold text-gray-800 line-clamp-2">
                       {selectedItem.book_title}
                     </h4>
-                    <p className="text-red-600 font-bold mt-1">
+                    <p className="text-red-600 font-bold mt-1 text-lg">
                       {formatPrice(selectedItem.flash_sale_price)}
                     </p>
                     <p className="text-sm text-gray-500 mt-1">
@@ -342,23 +406,31 @@ export default function FlashSalePage() {
                   </div>
                 </div>
 
+                {/* Address input */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Địa chỉ nhận hàng (Bắt buộc)
                   </label>
                   <textarea
                     rows={3}
-                    className="w-full border border-gray-300 rounded p-3 focus:ring-red-500 focus:border-red-500 outline-none"
+                    className="w-full border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none transition-all bg-gray-50/60"
                     placeholder="Nhập địa chỉ nhận hàng của bạn..."
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                   ></textarea>
                 </div>
 
-                <div className="bg-orange-50 p-3 rounded text-sm text-orange-800 mb-6 flex items-start">
+                {/* Info note */}
+                <div
+                  className="p-3 rounded-lg text-sm mb-6 flex items-start"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, rgba(254,243,199,0.7) 100%)",
+                    border: "1px solid rgba(251,191,36,0.25)",
+                  }}
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-2 shrink-0"
+                    className="h-5 w-5 mr-2 shrink-0 text-orange-500"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -368,16 +440,22 @@ export default function FlashSalePage() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <p>
-                    Sau khi nhấn xác nhận, bạn sẽ được chuyển đến VNPay để thanh toán. 
-                    <strong className="block mt-1">Bạn có 5 phút để hoàn tất!</strong>
+                  <p className="text-orange-800">
+                    Sau khi nhấn xác nhận, bạn sẽ được chuyển đến VNPay để thanh toán.
+                    <strong
+                      className="block mt-1 text-base"
+                      style={{ color: countdown <= 60 ? '#dc2626' : countdown <= 120 ? '#ea580c' : '#9a3412' }}
+                    >
+                      ⏳ Thời gian còn lại: {formatCountdown(countdown)}
+                    </strong>
                   </p>
                 </div>
 
+                {/* Action buttons */}
                 <div className="flex space-x-3">
                   <button
                     onClick={() => setShowAddressModal(false)}
-                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 font-medium"
+                    className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors"
                     disabled={reservingId !== null}
                   >
                     Hủy
@@ -385,7 +463,15 @@ export default function FlashSalePage() {
                   <button
                     onClick={confirmPurchase}
                     disabled={reservingId !== null || !address.trim()}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-medium disabled:bg-red-400 flex items-center justify-center"
+                    className="flex-1 px-4 py-2.5 text-white rounded-lg font-medium disabled:opacity-50 flex items-center justify-center transition-all"
+                    style={{
+                      background: reservingId !== null || !address.trim()
+                        ? "#f87171"
+                        : "linear-gradient(135deg, #ef4444 0%, #f97316 100%)",
+                      boxShadow: reservingId !== null || !address.trim()
+                        ? "none"
+                        : "0 4px 14px rgba(239,68,68,0.35)",
+                    }}
                   >
                     {reservingId !== null ? (
                       <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
