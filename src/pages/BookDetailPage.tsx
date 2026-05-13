@@ -515,21 +515,34 @@ export default function BookDetailPage() {
                 </div>
 
                 <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={handleAddToCart}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-teal-700 bg-white px-4 py-3 text-sm font-semibold text-teal-700 transition-colors hover:bg-teal-50"
-                  >
-                    <ShoppingCartOutlined />
-                    Thêm giỏ hàng
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleBuyNow}
-                    className="inline-flex items-center justify-center rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-teal-800"
-                  >
-                    Mua ngay
-                  </button>
+                  {flashSaleItemForBook && flashSaleState.activeCampaign ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate("/flash-sale")}
+                      className="col-span-1 sm:col-span-2 inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-red-600 to-orange-500 px-4 py-3 text-sm font-bold text-white transition-colors hover:from-red-700 hover:to-orange-600 shadow-lg animate-pulse"
+                    >
+                      <span className="text-xl">⚡</span>
+                      MUA NGAY FLASH SALE
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleAddToCart}
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-teal-700 bg-white px-4 py-3 text-sm font-semibold text-teal-700 transition-colors hover:bg-teal-50"
+                      >
+                        <ShoppingCartOutlined />
+                        Thêm giỏ hàng
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleBuyNow}
+                        className="inline-flex items-center justify-center rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-teal-800"
+                      >
+                        Mua ngay
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </section>

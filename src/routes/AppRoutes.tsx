@@ -11,6 +11,8 @@ import CheckoutOrderPage from "../pages/CheckoutOrderPage";
 import VNPayCallbackPage from "../pages/VNPayCallbackPage";
 import AccountPage from "../pages/AccountPage.tsx";
 import StaffDashboardPage from "../pages/StaffDashboardPage";
+import FlashSalePage from "../pages/FlashSalePage";
+import FlashSaleCountdownPage from "../pages/FlashSaleCountdownPage";
 import RequireStaff from "../components/guards/RequireStaff";
 import RequireAdmin from "../components/guards/RequireAdmin";
 import AdminLayout from "../components/layouts/AdminLayout/AdminLayout";
@@ -48,6 +50,10 @@ export default function AppRoutes() {
         <Route path="/checkout/:id" element={<CheckoutOrderPage />} />
         <Route path="/payment/vnpay-callback" element={<VNPayCallbackPage />} />
         <Route path="/account" element={<AccountPage />} />
+        
+        {/* Flash Sale routes */}
+        <Route path="/flash-sale" element={<FlashSalePage />} />
+        <Route path="/flash-sale/countdown/:reservationId" element={<FlashSaleCountdownPage />} />
 
         <Route element={<RequireStaff />}>
           <Route path="/staff" element={<StaffDashboardPage />} />

@@ -71,12 +71,18 @@ export default function BookCard({ data, action }: Props) {
       action.onClick();
       return;
     }
+    if (data.flashMeta) {
+      navigate("/flash-sale");
+      return;
+    }
     handleAddToCart();
   };
 
-  const actionLabel = action ? action.label : "Thêm giỏ hàng";
+  const actionLabel = action ? action.label : (data.flashMeta ? "Mua ngay Flash Sale" : "Thêm giỏ hàng");
   const actionIcon = action ? (
     (action.icon ?? null)
+  ) : data.flashMeta ? (
+    <span className="text-xl">⚡</span>
   ) : (
     <ShoppingCartOutlined className="text-base" />
   );
