@@ -1057,13 +1057,25 @@ export default function AccountPage() {
     if (s.includes("đã hủy") || s.includes("da huy")) {
       return "bg-rose-100 text-rose-700 border border-rose-200";
     }
-    if (s.includes("đang giao") || s.includes("dang giao")) {
-      return "bg-amber-100 text-amber-700 border border-amber-200";
-    }
-    if (s.includes("đã giao") || s.includes("da giao") || s.includes("thành công")) {
+    if (
+      s.includes("đã duyệt") ||
+      s.includes("da duyet") ||
+      s.includes("chờ giao hàng") ||
+      s.includes("cho giao hang") ||
+      s.includes("đang giao") ||
+      s.includes("dang giao") ||
+      s.includes("đã giao") ||
+      s.includes("da giao") ||
+      s.includes("thành công")
+    ) {
       return "bg-emerald-100 text-emerald-700 border border-emerald-200";
     }
-    if (s.includes("đang xử lý") || s.includes("dang xu ly") || s.includes("cho duyet")) {
+    if (
+      s.includes("đang xử lý") ||
+      s.includes("dang xu ly") ||
+      s.includes("chờ duyệt") ||
+      s.includes("cho duyet")
+    ) {
       return "bg-blue-100 text-blue-700 border border-blue-200";
     }
     return "bg-gray-100 text-gray-700 border border-gray-200";

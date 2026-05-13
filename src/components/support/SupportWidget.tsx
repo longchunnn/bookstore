@@ -42,6 +42,7 @@ function formatTime(
 export default function SupportWidget() {
   const location = useLocation();
   const token = useAppSelector((state) => state.session.token);
+  const userId = useAppSelector((state) => state.session.userId);
   const displayName = useAppSelector((state) => state.session.displayName);
   const primaryRole = useAppSelector((state) => state.session.primaryRole);
   const [isOpen, setIsOpen] = useState(false);
@@ -88,14 +89,28 @@ export default function SupportWidget() {
     return () => {
       cancelled = true;
     };
-  }, [isOpen, token, isStaff]);
+  }, [isOpen, token, isStaff, userId]);
+
+  useEffect(() => {
+    setIsFirebaseReady(false);
+    setConversations([]);
+    setSelectedConversationId("");
+    setMessages([]);
+    setRequestMessage("");
+    setReplyMessage("");
+  }, [token, userId]);
 
   useEffect(() => {
     if (!isOpen || !isFirebaseReady) return;
     let unsubscribe: undefined | (() => void);
     listenMyConversations((items) => {
       setConversations(items);
-      setSelectedConversationId((current) => current || items[0]?.id || "");
+      setSelectedConversationId((current) => {
+        if (current && items.some((conversation) => conversation.id === current)) {
+          return current;
+        }
+        return items[0]?.id || "";
+      });
     })
       .then((fn) => {
         unsubscribe = fn;
@@ -111,7 +126,7 @@ export default function SupportWidget() {
     return () => {
       unsubscribe?.();
     };
-  }, [isOpen, isFirebaseReady]);
+  }, [isOpen, isFirebaseReady, token, userId]);
 
   useEffect(() => {
     if (!selectedConversationId || !isFirebaseReady || !isOpen) {
@@ -133,7 +148,7 @@ export default function SupportWidget() {
     return () => {
       unsubscribe?.();
     };
-  }, [selectedConversationId, isFirebaseReady, isOpen]);
+  }, [selectedConversationId, isFirebaseReady, isOpen, token, userId]);
 
   const currentConversation = conversations.find(
     (conversation) => conversation.id === selectedConversationId,
@@ -191,9 +206,9 @@ export default function SupportWidget() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-60 flex flex-col items-end gap-3">
+    <div className="fixed bottom-24 right-5 z-60">
       {isOpen ? (
-        <div className="h-152 w-[24rem] overflow-hidden rounded-2xl border border-teal-100 bg-white shadow-2xl">
+        <div className="absolute bottom-0 right-20 h-[min(38rem,calc(100vh-7rem))] w-[calc(100vw-6.5rem)] max-w-[24rem] overflow-hidden rounded-2xl border border-teal-100 bg-white shadow-2xl sm:w-[24rem]">
           <div className="flex items-center justify-between bg-teal-800 px-4 py-3 text-white">
             <div>
               <p className="text-sm font-semibold">Hỗ trợ khách hàng</p>
@@ -210,7 +225,7 @@ export default function SupportWidget() {
             </button>
           </div>
 
-          <div className="grid h-138 grid-rows-[auto,1fr,auto]">
+          <div className="grid h-[calc(100%-3.75rem)] grid-rows-[auto,1fr,auto]">
             <div className="border-b border-gray-100 p-3">
               <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Bắt đầu yêu cầu hỗ trợ

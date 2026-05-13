@@ -425,8 +425,8 @@ export default function CheckoutPage() {
       shippingAddress,
       payment_method: paymentMethod === "cod" ? "COD" : "VNPay",
       paymentMethod: paymentMethod === "cod" ? "COD" : "VNPay",
-      order_status: "Đang xử lý",
-      orderStatus: "Đang xử lý",
+      order_status: "Chờ duyệt",
+      orderStatus: "Chờ duyệt",
       items: items.map((item) => ({
         book_id: item.id,
         bookId: item.id,

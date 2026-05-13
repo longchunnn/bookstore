@@ -40,16 +40,25 @@ import {
 } from "../../firebase/chatService";
 
 const MAX_ACTIVE_CHATS = 999;
+const STAFF_ORDERS_PAGE_SIZE = 10;
+const STAFF_BOOKS_PAGE_SIZE = 9;
 const DEFAULT_CHAT_TAGS = ["Gấp", "Đơn hàng", "Tư vấn sách", "Khiếu nại", "VIP"];
 const ORDER_TAGS = ["Gấp", "Cần gọi", "VIP", "Địa chỉ khó", "Thanh toán"];
 const ORDER_STATUS_OPTIONS = [
-  { value: "Cho duyet", label: "Chờ duyệt" },
-  { value: "Dang xu ly", label: "Đang xử lý" },
-  { value: "Dang giao", label: "Đang giao" },
-  { value: "Da giao", label: "Đã giao" },
-  { value: "Thanh cong", label: "Thành công" },
-  { value: "Da huy", label: "Đã hủy" },
+  { value: "Chờ duyệt", label: "Chờ duyệt" },
+  { value: "Đã duyệt", label: "Đã duyệt" },
+  { value: "Chờ giao hàng", label: "Chờ giao hàng" },
+  { value: "Đã hủy", label: "Đã hủy" },
 ];
+
+const ORDER_STATUS_LEGACY_ALIASES: Record<string, string> = {
+  "cho duyet": "Chờ duyệt",
+  "dang xu ly": "Chờ duyệt",
+  "dang giao": "Chờ giao hàng",
+  "da giao": "Chờ giao hàng",
+  "thanh cong": "Chờ giao hàng",
+  "da huy": "Đã hủy",
+};
 
 const DEFAULT_STAFF_PREFERENCES = {
   notificationSound: true,
@@ -179,6 +188,11 @@ function normalizeStatusKey(value: unknown) {
 
 function getOrderStatusOption(status: string) {
   const key = normalizeStatusKey(status);
+  const canonicalStatus = ORDER_STATUS_LEGACY_ALIASES[key];
+  if (canonicalStatus) {
+    return ORDER_STATUS_OPTIONS.find((option) => option.value === canonicalStatus);
+  }
+
   return ORDER_STATUS_OPTIONS.find(
     (option) =>
       normalizeStatusKey(option.value) === key ||
@@ -199,16 +213,23 @@ function statusStyle(status: string) {
   if (key.includes("huy") || key === "closed") {
     return "border-rose-200 bg-rose-50 text-rose-700";
   }
-  if (key.includes("thanh cong") || key === "da giao") {
+  if (key.includes("da duyet")) {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
-  if (key.includes("dang giao") || key === "active") {
+  if (key.includes("cho giao") || key === "active") {
     return "border-teal-200 bg-teal-50 text-teal-700";
   }
-  if (key.includes("xu ly") || key.includes("cho duyet")) {
+  if (key.includes("cho duyet")) {
     return "border-amber-200 bg-amber-50 text-amber-700";
   }
   return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
+function canStaffApproveOrder(order: ApiOrder) {
+  return (
+    normalizeStatusKey(order.payment_method) === "cod" &&
+    getOrderStatusValue(order.order_status) === "Chờ duyệt"
+  );
 }
 
 function Avatar({
@@ -397,6 +418,66 @@ function EmptyState({ text }: { text: string }) {
   );
 }
 
+function PaginationControls({
+  page,
+  totalPages,
+  totalItems,
+  pageSize,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalItems <= pageSize) return null;
+
+  const start = (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, totalItems);
+  const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
+
+  return (
+    <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm md:flex-row md:items-center md:justify-between">
+      <span>
+        Hiển thị <b>{start}</b>-<b>{end}</b> / <b>{totalItems}</b>
+      </span>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+          className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-600 transition hover:border-teal-200 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Trước
+        </button>
+        {pages.map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => onPageChange(item)}
+            className={`h-9 min-w-9 rounded-xl border px-3 text-sm font-bold transition ${
+              item === page
+                ? "border-teal-600 bg-teal-600 text-white"
+                : "border-slate-200 bg-white text-slate-600 hover:border-teal-200 hover:text-teal-700"
+            }`}
+          >
+            {item}
+          </button>
+        ))}
+        <button
+          type="button"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+          className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-600 transition hover:border-teal-200 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Sau
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function StaffWorkspace({ activeView }: { activeView: StaffView }) {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -424,10 +505,12 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
   const [orderTagFilter, setOrderTagFilter] = useState("all");
   const [orderTagsById, setOrderTagsById] = useState<Record<string, string[]>>({});
+  const [orderPage, setOrderPage] = useState(1);
 
   const [bookQuery, setBookQuery] = useState("");
   const [bookCategoryFilter, setBookCategoryFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+  const [bookPage, setBookPage] = useState(1);
 
   const [staffUid, setStaffUid] = useState("");
   const [assignedConversations, setAssignedConversations] = useState<ChatConversation[]>([]);
@@ -482,6 +565,14 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
   useEffect(() => {
     localStorage.setItem("staff_order_tags", JSON.stringify(orderTagsById));
   }, [orderTagsById]);
+
+  useEffect(() => {
+    setOrderPage(1);
+  }, [orderQuery, orderStatusFilter, orderTagFilter]);
+
+  useEffect(() => {
+    setBookPage(1);
+  }, [bookQuery, bookCategoryFilter, stockFilter]);
 
   useEffect(() => {
     setProfileDraft({
@@ -738,6 +829,16 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
     });
   }, [customersById, orderQuery, orderStatusFilter, orderTagFilter, orderTagsById, orders]);
 
+  const orderTotalPages = Math.max(
+    1,
+    Math.ceil(filteredOrders.length / STAFF_ORDERS_PAGE_SIZE),
+  );
+  const safeOrderPage = Math.min(orderPage, orderTotalPages);
+  const paginatedOrders = filteredOrders.slice(
+    (safeOrderPage - 1) * STAFF_ORDERS_PAGE_SIZE,
+    safeOrderPage * STAFF_ORDERS_PAGE_SIZE,
+  );
+
   const bookCategories = useMemo(
     () =>
       Array.from(
@@ -770,6 +871,16 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
       );
     });
   }, [bookCategoryFilter, bookQuery, books, stockFilter]);
+
+  const bookTotalPages = Math.max(
+    1,
+    Math.ceil(filteredBooks.length / STAFF_BOOKS_PAGE_SIZE),
+  );
+  const safeBookPage = Math.min(bookPage, bookTotalPages);
+  const paginatedBooks = filteredBooks.slice(
+    (safeBookPage - 1) * STAFF_BOOKS_PAGE_SIZE,
+    safeBookPage * STAFF_BOOKS_PAGE_SIZE,
+  );
 
   const unreadChats = assignedConversations.reduce(
     (total, item) => total + Number(item.unreadByStaff ?? 0),
@@ -1500,9 +1611,15 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
               </thead>
 
               <tbody className="divide-y divide-slate-100">
-                {filteredOrders.map((order) => {
+                {paginatedOrders.map((order) => {
                   const customer = customersById[order.user_id];
                   const tags = orderTagsById[order.id] ?? [];
+                  const canApproveOrder = canStaffApproveOrder(order);
+                  const statusOptionsForOrder = canApproveOrder
+                    ? ORDER_STATUS_OPTIONS.filter((status) =>
+                        ["Chờ duyệt", "Đã duyệt"].includes(status.value),
+                      )
+                    : ORDER_STATUS_OPTIONS;
 
                   return (
                     <tr key={order.id} className="align-top transition hover:bg-slate-50/70">
@@ -1548,9 +1665,15 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
                           onChange={(event) =>
                             void handleUpdateOrderStatus(order.id, event.target.value)
                           }
-                          className={`rounded-full border px-3 py-2 text-xs font-semibold outline-none ${statusStyle(order.order_status)}`}
+                          disabled={!canApproveOrder}
+                          title={
+                            canApproveOrder
+                              ? "Chuyển đơn COD sang Đã duyệt"
+                              : "Trạng thái này không được nhân viên cập nhật"
+                          }
+                          className={`rounded-full border px-3 py-2 text-xs font-semibold outline-none disabled:cursor-not-allowed disabled:opacity-80 ${statusStyle(order.order_status)}`}
                         >
-                          {ORDER_STATUS_OPTIONS.map((status) => (
+                          {statusOptionsForOrder.map((status) => (
                             <option key={status.value} value={status.value}>
                               {status.label}
                             </option>
@@ -1583,6 +1706,14 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
               </div>
             ) : null}
           </div>
+
+          <PaginationControls
+            page={safeOrderPage}
+            totalPages={orderTotalPages}
+            totalItems={filteredOrders.length}
+            pageSize={STAFF_ORDERS_PAGE_SIZE}
+            onPageChange={setOrderPage}
+          />
         </section>
       ) : null}
 
@@ -1920,7 +2051,7 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {filteredBooks.map((book) => {
+            {paginatedBooks.map((book) => {
               const draft = bookDrafts[book.id] ?? {
                 total_stock: String(book.total_stock ?? 0),
                 description: book.description ?? "",
@@ -1996,6 +2127,14 @@ export default function StaffWorkspace({ activeView }: { activeView: StaffView }
           {filteredBooks.length === 0 ? (
             <EmptyState text="Không tìm thấy sách phù hợp." />
           ) : null}
+
+          <PaginationControls
+            page={safeBookPage}
+            totalPages={bookTotalPages}
+            totalItems={filteredBooks.length}
+            pageSize={STAFF_BOOKS_PAGE_SIZE}
+            onPageChange={setBookPage}
+          />
         </section>
       ) : null}
     </div>
