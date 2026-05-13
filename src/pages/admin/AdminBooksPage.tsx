@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CloudUploadOutlined, LoadingOutlined } from "@ant-design/icons";
-import { Modal } from "antd";
+import { Modal, Pagination } from "antd";
 import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import type { ApiBook } from "../../utils/apiMappers";
@@ -80,6 +80,8 @@ export default function AdminBooksPage() {
   const [query, setQuery] = useState(() => {
     return new URLSearchParams(location.search).get("q") ?? "";
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<BookDraft>(getDefaultDraft());
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -129,6 +131,7 @@ export default function AdminBooksPage() {
     const next = new URLSearchParams(location.search).get("q") ?? "";
     if (next !== query) {
       setQuery(next);
+      setCurrentPage(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
@@ -147,6 +150,11 @@ export default function AdminBooksPage() {
       ).includes(q),
     );
   }, [books, query]);
+
+  const paginatedBooks = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage]);
 
   const editingBook = useMemo(
     () => (editingId ? (books.find((b) => b.id === editingId) ?? null) : null),
@@ -254,7 +262,7 @@ export default function AdminBooksPage() {
         </div>
 
         <div className="mt-4 divide-y divide-gray-100">
-          {filtered.map((book) => (
+          {paginatedBooks.map((book) => (
             <div
               key={book.id}
               className="grid gap-3 py-4 lg:grid-cols-[1.2fr,0.8fr,0.5fr,auto] lg:items-center"
@@ -322,6 +330,18 @@ export default function AdminBooksPage() {
             </div>
           ) : null}
         </div>
+
+        {filtered.length > pageSize && (
+          <div className="mt-6 flex justify-center pb-4">
+            <Pagination
+              current={currentPage}
+              total={filtered.length}
+              pageSize={pageSize}
+              onChange={(page) => setCurrentPage(page)}
+              showSizeChanger={false}
+            />
+          </div>
+        )}
       </div>
 
       <Modal

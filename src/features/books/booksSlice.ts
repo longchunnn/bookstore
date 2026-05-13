@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { type ApiBook } from "../../utils/apiMappers";
 import { getBookById, getBooks } from "../../services/booksService";
 import { getVouchers } from "../../services/vouchersService";
+import { getBookReviews } from "../../services/reviewsService";
 
 type DbPromotion = {
   id: string;
@@ -83,11 +84,12 @@ export const fetchBookDetail = createAsyncThunk(
       getBookById(bookId),
       getBooks(),
     ]);
+    const reviewResponse = await getBookReviews(bookId).catch(() => []);
 
     return {
       book: bookResponse,
       books: Array.isArray(booksResponse) ? booksResponse : [],
-      reviews: [],
+      reviews: reviewResponse,
     };
   },
 );

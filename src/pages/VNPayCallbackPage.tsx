@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import Header from "../components/layouts/Header";
 import Footer from "../components/layouts/Footer";
@@ -11,9 +11,11 @@ import {
 
 export default function VNPayCallbackPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const checkoutSession = useAppSelector((state) => state.cart.checkoutSession);
   const [isProcessed, setIsProcessed] = useState(false);
+  const [reviewBookId, setReviewBookId] = useState("");
 
   const status = searchParams.get("status") || "unknown";
   const message = searchParams.get("message") || "Không xác định";
@@ -23,6 +25,7 @@ export default function VNPayCallbackPage() {
     if (status === "success" && !isProcessed) {
       if (checkoutSession?.items) {
         const itemIds = checkoutSession.items.map((i) => i.id);
+        setReviewBookId(String(checkoutSession.items[0]?.id ?? ""));
         dispatch(removeCartItems(itemIds));
       }
       dispatch(clearCheckoutSession());
@@ -65,6 +68,15 @@ export default function VNPayCallbackPage() {
           )}
 
           <div className="flex flex-col gap-3">
+            {isSuccess && reviewBookId ? (
+              <button
+                type="button"
+                onClick={() => navigate(`/book/${encodeURIComponent(reviewBookId)}`)}
+                className="w-full inline-flex justify-center items-center rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 hover:bg-amber-100 transition-colors"
+              >
+                Bình luận sách đã mua
+              </button>
+            ) : null}
             <Link
               to="/account"
               className="w-full inline-flex justify-center items-center rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-800 transition-colors"

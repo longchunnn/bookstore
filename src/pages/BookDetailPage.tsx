@@ -13,6 +13,7 @@ import Header from "../components/layouts/Header";
 import Footer from "../components/layouts/Footer";
 import BookCard, { type BookCardData } from "../components/common/BookCard";
 import { getAccessToken } from "../services/axiosClient";
+import { createBookReview } from "../services/reviewsService";
 import { isJwtExpired } from "../utils/jwt";
 import { toast } from "react-toastify";
 import { addCartItem } from "../features/cart/cartSlice";
@@ -93,6 +94,11 @@ export default function BookDetailPage() {
   const loading = useAppSelector((state) => state.books.detailLoading);
   const error = useAppSelector((state) => state.books.detailError);
   const flashSaleState = useAppSelector((state) => state.flashSale);
+  const [reviewDraft, setReviewDraft] = useState({
+    rating: 5,
+    comment: "",
+  });
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -262,6 +268,44 @@ export default function BookDetailPage() {
     const added = handleAddToCart();
     if (!added) return;
     navigate("/cart");
+  };
+
+  const handleSubmitReview = async () => {
+    if (!book) return;
+    const token = getAccessToken();
+    if (!token || isJwtExpired(token)) {
+      navigate("/login");
+      return;
+    }
+
+    const comment = reviewDraft.comment.trim();
+    if (!comment) {
+      toast.error("Vui lòng nhập nội dung bình luận.");
+      return;
+    }
+
+    if (reviewDraft.rating < 1 || reviewDraft.rating > 5) {
+      toast.error("Vui lòng chọn số sao từ 1 đến 5.");
+      return;
+    }
+
+    try {
+      setIsSubmittingReview(true);
+      await createBookReview(String(book.id), {
+        rating: reviewDraft.rating,
+        comment,
+      });
+      setReviewDraft({ rating: 5, comment: "" });
+      toast.success("Đánh giá của bạn đang chờ admin duyệt.");
+    } catch (submitError) {
+      toast.error(
+        submitError instanceof Error
+          ? submitError.message
+          : "Không gửi được đánh giá.",
+      );
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   const averageRating = useMemo(() => {
@@ -584,6 +628,60 @@ export default function BookDetailPage() {
                   {renderStars(averageRating)}
                 </span>
                 <span>({reviews.length} đánh giá)</span>
+              </div>
+
+              <div className="mt-5 border border-gray-200 bg-gray-50 p-4">
+                <h3 className="text-base font-bold text-teal-900">
+                  Viết đánh giá của bạn
+                </h3>
+                <div className="mt-3 flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() =>
+                        setReviewDraft((current) => ({
+                          ...current,
+                          rating: star,
+                        }))
+                      }
+                      className={`text-2xl ${
+                        star <= reviewDraft.rating
+                          ? "text-amber-500"
+                          : "text-gray-300"
+                      }`}
+                      aria-label={`Chọn ${star} sao`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  value={reviewDraft.comment}
+                  onChange={(event) =>
+                    setReviewDraft((current) => ({
+                      ...current,
+                      comment: event.target.value,
+                    }))
+                  }
+                  maxLength={2000}
+                  rows={4}
+                  className="mt-3 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-teal-600"
+                  placeholder="Chia sẻ cảm nhận của bạn về cuốn sách..."
+                />
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => void handleSubmitReview()}
+                    disabled={isSubmittingReview}
+                    className="bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSubmittingReview ? "Đang gửi..." : "Gửi đánh giá"}
+                  </button>
+                  <p className="text-xs text-gray-500">
+                    Bài viết sẽ hiển thị sau khi admin kiểm duyệt.
+                  </p>
+                </div>
               </div>
 
               {reviews.length === 0 ? (

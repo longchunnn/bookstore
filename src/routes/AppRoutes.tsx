@@ -23,6 +23,8 @@ import {
   AdminFlashSaleSelectBooksPage,
   AdminStatsPage,
   AdminVouchersPage,
+  AdminSettingsPage,
+  AdminReviewsPage,
 } from "../pages/admin";
 import {
   StaffBooksPage,
@@ -75,6 +77,7 @@ export default function AppRoutes() {
             <Route path="stats" element={<AdminStatsPage />} />
             <Route path="books" element={<AdminBooksPage />} />
             <Route path="vouchers" element={<AdminVouchersPage />} />
+            <Route path="reviews" element={<AdminReviewsPage />} />
             <Route path="flash-sale" element={<AdminFlashSalePage />} />
             <Route
               path="flash-sale/new"
@@ -84,6 +87,7 @@ export default function AppRoutes() {
               path="flash-sale/new/select"
               element={<AdminFlashSaleSelectBooksPage />}
             />
+            <Route path="settings" element={<AdminSettingsPage />} />
           </Route>
         </Route>
       </Routes>
