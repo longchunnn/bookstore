@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CheckOutlined,
   DeleteOutlined,
   DownOutlined,
   UpOutlined,
 } from "@ant-design/icons";
+import { Pagination } from "antd";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Header from "../components/layouts/Header";
 import Footer from "../components/layouts/Footer";
@@ -90,6 +91,8 @@ function getEligibleSubtotalForVoucher(
   return subtotal;
 }
 
+const ITEMS_PER_PAGE = 5;
+
 export default function CartPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -119,7 +122,9 @@ export default function CartPage() {
     if (items.length === 0) return new Set<string>();
 
     const baseSet =
-      selectedItemIds === null ? new Set(items.map((i) => i.id)) : selectedItemIds;
+      selectedItemIds === null
+        ? new Set(items.map((i) => i.id))
+        : selectedItemIds;
 
     return new Set(Array.from(baseSet).filter((id) => itemIdSet.has(id)));
   }, [itemIdSet, items, selectedItemIds]);
@@ -138,17 +143,27 @@ export default function CartPage() {
     });
   }, [items, keyword]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredItems.length / ITEMS_PER_PAGE),
+  );
+
+  useEffect(() => {
+    setCurrentPage((prev) => Math.min(Math.max(1, prev), totalPages));
+  }, [totalPages]);
+
+  const paginatedItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredItems.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [currentPage, filteredItems]);
+
   const selectedItems = useMemo(
     () => items.filter((item) => effectiveSelectedItemIds.has(item.id)),
     [effectiveSelectedItemIds, items],
   );
 
-  const filteredSelectedCount = useMemo(
-    () =>
-      filteredItems.filter((item) => effectiveSelectedItemIds.has(item.id))
-        .length,
-    [effectiveSelectedItemIds, filteredItems],
-  );
+  const selectedCount = effectiveSelectedItemIds.size;
 
   const subtotal = useMemo(
     () =>
@@ -276,8 +291,7 @@ export default function CartPage() {
   const shippingFee = shippingFeeBeforeVoucher - shippingDiscount;
   const total = Math.max(0, subtotal - discountAmount + shippingFee);
 
-  const allFilteredSelected =
-    filteredItems.length > 0 && filteredSelectedCount === filteredItems.length;
+  const allCartSelected = items.length > 0 && selectedCount === items.length;
 
   const handleToggleItem = (id: string, checked: boolean) => {
     setSelectedItemIds((prev) => {
@@ -292,21 +306,8 @@ export default function CartPage() {
     });
   };
 
-  const handleToggleAllFiltered = (checked: boolean) => {
-    setSelectedItemIds((prev) => {
-      const next =
-        prev === null ? new Set(items.map((i) => i.id)) : new Set(prev);
-
-      filteredItems.forEach((item) => {
-        if (checked) {
-          next.add(item.id);
-        } else {
-          next.delete(item.id);
-        }
-      });
-
-      return next;
-    });
+  const handleToggleAllCart = (checked: boolean) => {
+    setSelectedItemIds(checked ? null : new Set());
   };
 
   const handleProceedCheckout = () => {
@@ -342,16 +343,16 @@ export default function CartPage() {
                 <span className="relative inline-flex h-4 w-4 items-center justify-center">
                   <input
                     type="checkbox"
-                    checked={allFilteredSelected}
+                    checked={allCartSelected}
                     onChange={(event) =>
-                      handleToggleAllFiltered(event.target.checked)
+                      handleToggleAllCart(event.target.checked)
                     }
                     className="peer sr-only"
                   />
                   <span className="h-4 w-4 rounded-sm border border-black bg-white" />
                   <CheckOutlined className="pointer-events-none absolute text-[10px] text-teal-700 opacity-0 transition-opacity peer-checked:opacity-100" />
                 </span>
-                Chọn tất cả sản phẩm đang hiển thị ({filteredItems.length})
+                Chọn tất cả sản phẩm trong giỏ hàng ({items.length})
               </label>
             ) : null}
 
@@ -373,16 +374,16 @@ export default function CartPage() {
               </div>
             ) : (
               <div className="mt-6 space-y-5">
-                {filteredItems.map((item) => (
+                {paginatedItems.map((item) => (
                   <article
                     key={item.id}
-                    className={`grid gap-4 rounded-lg border-b px-3 pb-5 pt-3 sm:grid-cols-[96px_1fr] ${
+                    className={`grid gap-4 rounded-lg border-b px-3 pb-5 pt-3 sm:grid-cols-[240px_1fr] ${
                       effectiveSelectedItemIds.has(item.id)
                         ? "border-teal-200 bg-teal-50/40"
                         : "border-gray-100"
                     }`}
                   >
-                    <div className="flex items-center gap-3 pl-1">
+                    <div className="flex items-start gap-3 pl-1">
                       <label className="relative inline-flex h-4 w-4 cursor-pointer items-center justify-center">
                         <input
                           type="checkbox"
@@ -401,14 +402,14 @@ export default function CartPage() {
                           "https://picsum.photos/200/280?grayscale"
                         }
                         alt={item.title}
-                        className="h-28 w-24 rounded-md object-cover"
+                        className="h-60 w-44 shrink-0 rounded-xl object-cover"
                       />
                     </div>
 
                     <div>
                       <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h2 className="font-semibold text-gray-900">
+                        <div className="min-w-0">
+                          <h2 className="font-semibold text-gray-900 wrap-break-word">
                             {item.title}
                           </h2>
                           {item.author ? (
@@ -417,7 +418,7 @@ export default function CartPage() {
                             </p>
                           ) : null}
                         </div>
-                        <p className="font-semibold text-teal-800">
+                        <p className="shrink-0 font-semibold text-teal-800">
                           {formatCurrency(item.unitPrice * item.quantity)}
                         </p>
                       </div>
@@ -469,6 +470,18 @@ export default function CartPage() {
                     </div>
                   </article>
                 ))}
+
+                {filteredItems.length > ITEMS_PER_PAGE ? (
+                  <div className="flex justify-center pt-2">
+                    <Pagination
+                      current={currentPage}
+                      total={filteredItems.length}
+                      pageSize={ITEMS_PER_PAGE}
+                      onChange={(page) => setCurrentPage(page)}
+                      showSizeChanger={false}
+                    />
+                  </div>
+                ) : null}
               </div>
             )}
           </section>
@@ -497,13 +510,15 @@ export default function CartPage() {
                         if (!effectiveSelectedDiscountId) return top;
                         if (
                           top.some(
-                            (item) => item.voucher.id === effectiveSelectedDiscountId,
+                            (item) =>
+                              item.voucher.id === effectiveSelectedDiscountId,
                           )
                         ) {
                           return top;
                         }
                         const selected = discountVoucherOptions.find(
-                          (item) => item.voucher.id === effectiveSelectedDiscountId,
+                          (item) =>
+                            item.voucher.id === effectiveSelectedDiscountId,
                         );
                         return selected ? [...top, selected] : top;
                       })()

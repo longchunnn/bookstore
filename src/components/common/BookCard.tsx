@@ -24,6 +24,7 @@ export type BookCardData = {
 
 type Props = {
   data: BookCardData;
+  imageHeightClassName?: string;
   action?: {
     label: string;
     onClick: () => void;
@@ -32,7 +33,11 @@ type Props = {
   };
 };
 
-export default function BookCard({ data, action }: Props) {
+export default function BookCard({
+  data,
+  action,
+  imageHeightClassName,
+}: Props) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -89,13 +94,13 @@ export default function BookCard({ data, action }: Props) {
 
   return (
     <div
-      className={`bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-sm transition-shadow ${data.flashMeta ? "bg-gradient-to-b from-white to-teal-100  " : ""}`}
+      className={`bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-sm transition-shadow ${data.flashMeta ? "bg-linear-to-b from-white to-teal-100  " : ""}`}
     >
       <Link to={`/book/${data.id}`}>
         <ImageFrame
           src={data.coverSrc}
           alt={data.title}
-          heightClassName="h-56"
+          heightClassName={imageHeightClassName ?? "h-56"}
         />
       </Link>
       <div className="p-4">

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { DownOutlined, UpOutlined } from "@ant-design/icons";
 
 interface FindProps {
   categories: string[];
@@ -25,6 +26,18 @@ function Find({
 }: FindProps) {
   const [priceFrom, setPriceFrom] = useState(minPrice);
   const [priceTo, setPriceTo] = useState(maxPrice);
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showAllAuthors, setShowAllAuthors] = useState(false);
+
+  const visibleCategories = useMemo(
+    () => (showAllCategories ? categories : categories.slice(0, 5)),
+    [categories, showAllCategories],
+  );
+
+  const visibleAuthors = useMemo(
+    () => (showAllAuthors ? authors : authors.slice(0, 5)),
+    [authors, showAllAuthors],
+  );
 
   useEffect(() => {
     setPriceFrom(minPrice);
@@ -56,7 +69,7 @@ function Find({
     <aside className="hidden lg:block bg-white border border-gray-100 rounded-2xl sticky top-24 w-72">
       <div className="font-bold text-gray-800 mb-3 pl-4 pt-4">Thể loại</div>
       <div>
-        {categories.map((c) => (
+        {visibleCategories.map((c) => (
           <button
             type="button"
             key={c}
@@ -70,13 +83,28 @@ function Find({
             {c}
           </button>
         ))}
+
+        {categories.length > 5 ? (
+          <button
+            type="button"
+            onClick={() => setShowAllCategories((current) => !current)}
+            aria-label={
+              showAllCategories
+                ? "Thu gọn danh sách thể loại"
+                : "Xem tất cả thể loại"
+            }
+            className="mx-auto my-2 flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 hover:border-teal-200 hover:text-teal-700"
+          >
+            {showAllCategories ? <UpOutlined /> : <DownOutlined />}
+          </button>
+        ) : null}
       </div>
 
       <div className="border-t border-gray-100 my-4" />
 
       <div className="font-bold text-gray-800 mb-3 pl-4">Tác giả</div>
       <div>
-        {authors.map((a) => (
+        {visibleAuthors.map((a) => (
           <button
             type="button"
             key={a}
@@ -90,6 +118,21 @@ function Find({
             {a}
           </button>
         ))}
+
+        {authors.length > 5 ? (
+          <button
+            type="button"
+            onClick={() => setShowAllAuthors((current) => !current)}
+            aria-label={
+              showAllAuthors
+                ? "Thu gọn danh sách tác giả"
+                : "Xem tất cả tác giả"
+            }
+            className="mx-auto my-2 flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 hover:border-teal-200 hover:text-teal-700"
+          >
+            {showAllAuthors ? <UpOutlined /> : <DownOutlined />}
+          </button>
+        ) : null}
       </div>
 
       <div className="border-t border-gray-100 my-4" />

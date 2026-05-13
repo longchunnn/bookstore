@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Table } from "antd";
 import { toast } from "react-toastify";
 import type { ApiVoucher } from "../../services/vouchersService";
+import { isExpired } from "../../utils/promotionExpiry";
 import {
   getCategories,
   type ApiCategory,
@@ -198,7 +199,10 @@ export default function AdminVouchersPage() {
     };
   }, []);
 
-  const filtered = items;
+  const visibleItems = useMemo(() => {
+    const nowMs = Date.now();
+    return items.filter((voucher) => !isExpired(voucher.endDate, nowMs));
+  }, [items]);
 
   const editingVoucher = useMemo(
     () =>
@@ -331,7 +335,7 @@ export default function AdminVouchersPage() {
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div className="text-sm font-semibold text-gray-500">
-            {loading ? "Đang tải..." : `${filtered.length} mã`}
+            {loading ? "Đang tải..." : `${visibleItems.length} mã`}
           </div>
         </div>
 
@@ -339,7 +343,7 @@ export default function AdminVouchersPage() {
           className="mt-4"
           rowKey={(record) => record.promotionId}
           loading={loading}
-          dataSource={filtered}
+          dataSource={visibleItems}
           pagination={{ pageSize: 8 }}
           columns={[
             {

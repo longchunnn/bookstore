@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { isJwtExpired, parseJwtPayload } from "../../utils/jwt";
+import { isExpired } from "../../utils/promotionExpiry";
 
 export type VoucherType = "discount" | "freeship";
 
@@ -12,6 +13,7 @@ export type VoucherWalletItem = {
   applies_to_categories: string[];
   voucher_type: VoucherType;
   claimed_at: string;
+  expires_at?: string;
 };
 
 type VoucherState = {
@@ -51,9 +53,12 @@ function loadInitialVouchers(): VoucherWalletItem[] {
     const raw = localStorage.getItem(`bookstore_claimed_vouchers:${userId}`);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as VoucherWalletItem[];
-    return Array.isArray(parsed)
-      ? parsed.map((voucher) => normalizeVoucherDisplay(voucher))
-      : [];
+    if (!Array.isArray(parsed)) return [];
+
+    const nowMs = Date.now();
+    return parsed
+      .filter((voucher) => !isExpired(voucher.expires_at, nowMs))
+      .map((voucher) => normalizeVoucherDisplay(voucher));
   } catch {
     return [];
   }
