@@ -81,6 +81,14 @@ export async function getReservationStatus(
   return unwrapResult<FlashSaleReservationStatus>(response);
 }
 
+export async function cancelFlashSaleReservation(
+  reservationId: string
+): Promise<void> {
+  await axiosClient.post(
+    `/flash-sale/reserve/${encodeURIComponent(reservationId)}/cancel`
+  );
+}
+
 // ============================================================
 // SSE connection
 // ============================================================
