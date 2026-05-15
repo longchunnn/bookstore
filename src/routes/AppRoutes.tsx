@@ -10,6 +10,9 @@ import CheckoutPage from "../pages/CheckoutPage";
 import CheckoutOrderPage from "../pages/CheckoutOrderPage";
 import VNPayCallbackPage from "../pages/VNPayCallbackPage";
 import AccountPage from "../pages/AccountPage.tsx";
+// import StaffDashboardPage from "../pages/StaffDashboardPage";
+import FlashSalePage from "../pages/FlashSalePage";
+import FlashSaleCountdownPage from "../pages/FlashSaleCountdownPage";
 import RequireStaff from "../components/guards/RequireStaff";
 import RequireAdmin from "../components/guards/RequireAdmin";
 import AdminLayout from "../components/layouts/AdminLayout/AdminLayout";
@@ -20,6 +23,9 @@ import {
   AdminFlashSaleSelectBooksPage,
   AdminStatsPage,
   AdminVouchersPage,
+  AdminSettingsPage,
+  AdminReviewsPage,
+  AdminAccountsPage,
 } from "../pages/admin";
 import {
   StaffBooksPage,
@@ -54,6 +60,10 @@ export default function AppRoutes() {
         <Route path="/payment/vnpay-callback" element={<VNPayCallbackPage />} />
         <Route path="/account" element={<AccountPage />} />
 
+        {/* Flash Sale routes */}
+        <Route path="/flash-sale" element={<FlashSalePage />} />
+        <Route path="/flash-sale/countdown/:reservationId" element={<FlashSaleCountdownPage />} />
+
         <Route element={<RequireStaff />}>
           <Route path="/staff" element={<Navigate to="/staff/chat" replace />} />
           <Route path="/staff/chat" element={<StaffChatPage />} />
@@ -68,6 +78,8 @@ export default function AppRoutes() {
             <Route path="stats" element={<AdminStatsPage />} />
             <Route path="books" element={<AdminBooksPage />} />
             <Route path="vouchers" element={<AdminVouchersPage />} />
+            <Route path="reviews" element={<AdminReviewsPage />} />
+            <Route path="accounts" element={<AdminAccountsPage />} />
             <Route path="flash-sale" element={<AdminFlashSalePage />} />
             <Route
               path="flash-sale/new"
@@ -77,6 +89,7 @@ export default function AppRoutes() {
               path="flash-sale/new/select"
               element={<AdminFlashSaleSelectBooksPage />}
             />
+            <Route path="settings" element={<AdminSettingsPage />} />
           </Route>
         </Route>
       </Routes>

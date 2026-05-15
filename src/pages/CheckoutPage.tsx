@@ -158,7 +158,7 @@ export default function CheckoutPage() {
   const [addressError, setAddressError] = useState("");
   const [successMessage] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [countdown, setCountdown] = useState(5);
+  const [reviewPromptItems, setReviewPromptItems] = useState<CartItem[]>([]);
 
   const [provinces, setProvinces] = useState<AdministrativeOption[]>([]);
   const [districts, setDistricts] = useState<AdministrativeOption[]>([]);
@@ -179,20 +179,6 @@ export default function CheckoutPage() {
       disposed = true;
     };
   }, []);
-
-  useEffect(() => {
-    let timer: any;
-    if (showSuccessModal && countdown > 0) {
-      timer = setInterval(() => {
-        setCountdown((prev) => prev - 1);
-      }, 1000);
-    } else if (showSuccessModal && countdown === 0) {
-      navigate("/account");
-    }
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [showSuccessModal, countdown, navigate]);
 
   useEffect(() => {
     let disposed = false;
@@ -439,8 +425,8 @@ export default function CheckoutPage() {
       shippingAddress,
       payment_method: paymentMethod === "cod" ? "COD" : "VNPay",
       paymentMethod: paymentMethod === "cod" ? "COD" : "VNPay",
-      order_status: "Đang xử lý",
-      orderStatus: "Đang xử lý",
+      order_status: "Chờ duyệt",
+      orderStatus: "Chờ duyệt",
       items: items.map((item) => ({
         book_id: item.id,
         bookId: item.id,
@@ -465,6 +451,7 @@ export default function CheckoutPage() {
     }
 
     setAddressError("");
+    setReviewPromptItems(items);
     setShowSuccessModal(true);
 
     const purchasedItemIds = items.map(item => item.id);
@@ -734,6 +721,16 @@ export default function CheckoutPage() {
               >
                 Theo dõi đơn hàng
               </button>
+              {reviewPromptItems.length > 0 ? (
+                <button
+                  onClick={() =>
+                    navigate(`/book/${encodeURIComponent(reviewPromptItems[0].id)}`)
+                  }
+                  className="w-full rounded-xl border border-amber-200 bg-amber-50 py-3 font-semibold text-amber-800 transition-colors hover:bg-amber-100"
+                >
+                  Bình luận sách đã mua
+                </button>
+              ) : null}
               <button
                 onClick={() => navigate("/")}
                 className="w-full rounded-xl border border-gray-200 bg-white py-3 font-semibold text-gray-600 transition-colors hover:bg-gray-50"
@@ -742,7 +739,7 @@ export default function CheckoutPage() {
               </button>
             </div>
             <p className="mt-6 text-xs text-gray-400">
-              Tự động chuyển hướng sau {countdown} giây...
+              Bạn có thể bình luận sau khi đơn hàng được hoàn tất.
             </p>
           </div>
         </div>

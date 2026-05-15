@@ -236,7 +236,9 @@ export default function HomePage() {
             coverSrc: book.cover_image,
             rating: ratingMap.get(String(book.id))?.average,
             ratingCount: ratingMap.get(String(book.id))?.count,
-            flashMeta: `Con lai ${item.flash_stock} suat • Gioi han ${item.purchase_limit}`,
+            flashMeta: item.sold_out
+              ? "Đã hết hàng"
+              : `Còn lại ${item.flash_stock} suất • Đã bán ${item.sold_quantity}`,
           };
         })
         .filter(Boolean) as BookCardData[],
@@ -261,14 +263,6 @@ export default function HomePage() {
     [books, ratingMap],
   );
 
-  const classicBooks = useMemo(
-    () =>
-      books
-        .filter((book) => book.category_name === "Tiểu thuyết")
-        .slice(0, 6)
-        .map((book) => mapBook(book, ratingMap.get(String(book.id)))),
-    [books, ratingMap],
-  );
 
   const scienceBooks = useMemo(
     () =>
@@ -407,14 +401,6 @@ export default function HomePage() {
               ))}
             </div>
           </section>
-
-          {!loading ? (
-            <BookSlider
-              title="Sách văn học kinh điển"
-              books={classicBooks}
-              viewAllTo="/search?category=Tiểu+thuyết"
-            />
-          ) : null}
 
           {!loading ? (
             <BookSlider

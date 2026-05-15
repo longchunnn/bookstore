@@ -82,6 +82,8 @@ export default function AdminBooksPage() {
   const [query, setQuery] = useState(() => {
     return new URLSearchParams(location.search).get("q") ?? "";
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<BookDraft>(getDefaultDraft());
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -132,6 +134,7 @@ export default function AdminBooksPage() {
     const next = new URLSearchParams(location.search).get("q") ?? "";
     if (next !== query) {
       setQuery(next);
+      setCurrentPage(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
@@ -155,6 +158,11 @@ export default function AdminBooksPage() {
     );
   }, [books, query]);
 
+  const paginatedBooks = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage]);
+
   const totalPages = useMemo(() => {
     return Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   }, [filtered.length]);
@@ -163,10 +171,7 @@ export default function AdminBooksPage() {
     setPage((current) => Math.min(Math.max(1, current), totalPages));
   }, [totalPages]);
 
-  const paginatedBooks = useMemo(() => {
-    const startIndex = (page - 1) * ITEMS_PER_PAGE;
-    return filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filtered, page]);
+
 
   const editingBook = useMemo(
     () => (editingId ? (books.find((b) => b.id === editingId) ?? null) : null),
@@ -358,17 +363,18 @@ export default function AdminBooksPage() {
           ) : null}
         </div>
 
-        {filtered.length > 0 ? (
-          <div className="mt-5 flex items-center justify-end">
+        {filtered.length > pageSize && (
+          <div className="mt-6 flex justify-center pb-4">
             <Pagination
-              current={Math.min(page, totalPages)}
-              pageSize={ITEMS_PER_PAGE}
+              current={currentPage}
               total={filtered.length}
-              onChange={(nextPage) => setPage(nextPage)}
+              pageSize={pageSize}
+              onChange={(page) => setCurrentPage(page)}
               showSizeChanger={false}
             />
           </div>
-        ) : null}
+        )}
+        
       </div>
 
       <Modal

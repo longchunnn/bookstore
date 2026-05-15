@@ -18,6 +18,11 @@ export type RegisterPayload = {
   password: string;
 };
 
+export type ChangePasswordPayload = {
+  currentPassword: string;
+  newPassword: string;
+};
+
 function normalizeAccount(value: string): string {
   return String(value || "")
     .trim()
@@ -111,4 +116,23 @@ export async function registerAccount(
   });
 
   return normalizeUser(unwrapResult(response));
+}
+
+export async function changeCustomerPassword(
+  payload: ChangePasswordPayload,
+): Promise<void> {
+  const currentPassword = String(payload.currentPassword || "");
+  const newPassword = String(payload.newPassword || "");
+
+  if (!currentPassword.trim() || !newPassword.trim()) {
+    throw new Error("Vui lòng nhập đầy đủ thông tin đổi mật khẩu.");
+  }
+  if (newPassword.length < 6) {
+    throw new Error("Mật khẩu mới phải có ít nhất 6 ký tự.");
+  }
+
+  await axiosClient.patch("/users/me/password", {
+    current_password: currentPassword,
+    new_password: newPassword,
+  });
 }

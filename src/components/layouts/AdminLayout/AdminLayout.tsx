@@ -12,8 +12,10 @@ import {
   PlusOutlined,
   SearchOutlined,
   SettingOutlined,
+  StarOutlined,
   ThunderboltOutlined,
   TagOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import { Input } from "antd";
 import { useEffect, useMemo, useState } from "react";
@@ -36,6 +38,16 @@ const navItems = [
     to: "/admin/vouchers",
     label: "Quản lý mã",
     icon: <TagOutlined />,
+  },
+  {
+    to: "/admin/reviews",
+    label: "Duyệt đánh giá",
+    icon: <StarOutlined />,
+  },
+  {
+    to: "/admin/accounts",
+    label: "Quản lý tài khoản",
+    icon: <TeamOutlined />,
   },
   {
     to: "/admin/flash-sale",
@@ -170,7 +182,7 @@ export default function AdminLayout() {
             </Link>
 
             <Link
-              to="/account"
+              to="/admin/settings"
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
             >
               <SettingOutlined />

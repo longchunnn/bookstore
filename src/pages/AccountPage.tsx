@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
 import { clearAccessToken, getAccessToken } from "../services/axiosClient";
+import { changeCustomerPassword } from "../services/authService";
 import { getBooks } from "../services/booksService";
 import { getOrdersForStaff, cancelOrder } from "../services/ordersService";
 import { getUserById } from "../services/usersService";
@@ -267,6 +268,12 @@ export default function AccountPage() {
   );
   const [selectedVoucher, setSelectedVoucher] =
     useState<VoucherWalletItem | null>(null);
+  const [passwordDraft, setPasswordDraft] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const isDev =
     typeof import.meta !== "undefined" && Boolean(import.meta.env?.DEV);
 
@@ -970,12 +977,54 @@ export default function AccountPage() {
 
   const handleSecurityAction = (action: "password" | "logout") => {
     if (action === "password") {
-      toast.info("Tính năng đổi mật khẩu sẽ kết nối API ở bước tiếp theo.");
+      setActiveSection("security");
       return;
     }
 
     clearAccessToken();
     navigate("/", { replace: true });
+  };
+
+  const handleChangePassword = async () => {
+    const currentPassword = passwordDraft.currentPassword;
+    const newPassword = passwordDraft.newPassword;
+    const confirmPassword = passwordDraft.confirmPassword;
+
+    if (
+      !currentPassword.trim() ||
+      !newPassword.trim() ||
+      !confirmPassword.trim()
+    ) {
+      toast.error("Vui lòng nhập đầy đủ thông tin đổi mật khẩu.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error("Mật khẩu mới phải có ít nhất 6 ký tự.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("Mật khẩu xác nhận chưa trùng khớp.");
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+      await changeCustomerPassword({ currentPassword, newPassword });
+      setPasswordDraft({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      toast.success("Đã đổi mật khẩu thành công.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Không đổi được mật khẩu.",
+      );
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   const displayName =
@@ -1008,13 +1057,25 @@ export default function AccountPage() {
     if (s.includes("đã hủy") || s.includes("da huy")) {
       return "bg-rose-100 text-rose-700 border border-rose-200";
     }
-    if (s.includes("đang giao") || s.includes("dang giao")) {
-      return "bg-amber-100 text-amber-700 border border-amber-200";
-    }
-    if (s.includes("đã giao") || s.includes("da giao") || s.includes("thành công")) {
+    if (
+      s.includes("đã duyệt") ||
+      s.includes("da duyet") ||
+      s.includes("chờ giao hàng") ||
+      s.includes("cho giao hang") ||
+      s.includes("đang giao") ||
+      s.includes("dang giao") ||
+      s.includes("đã giao") ||
+      s.includes("da giao") ||
+      s.includes("thành công")
+    ) {
       return "bg-emerald-100 text-emerald-700 border border-emerald-200";
     }
-    if (s.includes("đang xử lý") || s.includes("dang xu ly") || s.includes("cho duyet")) {
+    if (
+      s.includes("đang xử lý") ||
+      s.includes("dang xu ly") ||
+      s.includes("chờ duyệt") ||
+      s.includes("cho duyet")
+    ) {
       return "bg-blue-100 text-blue-700 border border-blue-200";
     }
     return "bg-gray-100 text-gray-700 border border-gray-200";
@@ -1468,14 +1529,87 @@ export default function AccountPage() {
                 <p className="text-sm text-gray-600">
                   Bạn có thể đổi mật khẩu hoặc đăng xuất khỏi tài khoản tại đây.
                 </p>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleSecurityAction("password")}
-                    className="border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:border-teal-700 hover:text-teal-700"
-                  >
+
+                <div className="max-w-2xl border border-gray-200 bg-gray-50 p-4">
+                  <h3 className="text-base font-bold text-teal-900">
                     Đổi mật khẩu
-                  </button>
+                  </h3>
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <label className="space-y-1 text-sm sm:col-span-2">
+                      <span className="font-semibold text-gray-700">
+                        Mật khẩu hiện tại
+                      </span>
+                      <input
+                        type="password"
+                        value={passwordDraft.currentPassword}
+                        onChange={(event) =>
+                          setPasswordDraft((current) => ({
+                            ...current,
+                            currentPassword: event.target.value,
+                          }))
+                        }
+                        className="w-full rounded-md border border-gray-200 px-3 py-2 outline-none focus:border-teal-600"
+                        autoComplete="current-password"
+                      />
+                    </label>
+
+                    <label className="space-y-1 text-sm">
+                      <span className="font-semibold text-gray-700">
+                        Mật khẩu mới
+                      </span>
+                      <input
+                        type="password"
+                        value={passwordDraft.newPassword}
+                        onChange={(event) =>
+                          setPasswordDraft((current) => ({
+                            ...current,
+                            newPassword: event.target.value,
+                          }))
+                        }
+                        className="w-full rounded-md border border-gray-200 px-3 py-2 outline-none focus:border-teal-600"
+                        autoComplete="new-password"
+                      />
+                    </label>
+
+                    <label className="space-y-1 text-sm">
+                      <span className="font-semibold text-gray-700">
+                        Xác nhận mật khẩu mới
+                      </span>
+                      <input
+                        type="password"
+                        value={passwordDraft.confirmPassword}
+                        onChange={(event) =>
+                          setPasswordDraft((current) => ({
+                            ...current,
+                            confirmPassword: event.target.value,
+                          }))
+                        }
+                        className="w-full rounded-md border border-gray-200 px-3 py-2 outline-none focus:border-teal-600"
+                        autoComplete="new-password"
+                      />
+                    </label>
+
+                    <div className="sm:col-span-2">
+                      <button
+                        type="button"
+                        onClick={() => void handleChangePassword()}
+                        disabled={
+                          isChangingPassword ||
+                          !passwordDraft.currentPassword ||
+                          !passwordDraft.newPassword ||
+                          !passwordDraft.confirmPassword
+                        }
+                        className="bg-teal-700 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isChangingPassword
+                          ? "Đang cập nhật..."
+                          : "Cập nhật mật khẩu"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
                   <button
                     type="button"
                     onClick={() => handleSecurityAction("logout")}

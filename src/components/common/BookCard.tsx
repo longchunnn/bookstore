@@ -2,11 +2,12 @@ import ImageFrame from "../common/ImageFrame";
 import { ShoppingCartOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { getAccessToken } from "../../services/axiosClient";
-import { useAppDispatch } from "../../app/hooks";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { addCartItem } from "../../features/cart/cartSlice";
 import { isJwtExpired } from "../../utils/jwt";
 import { toast } from "react-toastify";
 import type { ReactNode } from "react";
+import { getDefaultShippingAddress } from "../../utils/shippingAddress";
 
 export type BookCardData = {
   id: string;
@@ -40,6 +41,8 @@ export default function BookCard({
 }: Props) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const savedAddresses = useAppSelector((state) => state.session.savedAddresses);
+  const selectedAddressId = useAppSelector((state) => state.session.selectedAddressId);
 
   const safeRating =
     typeof data.rating === "number"
@@ -76,12 +79,34 @@ export default function BookCard({
       action.onClick();
       return;
     }
+    if (data.flashMeta) {
+      const token = getAccessToken();
+      if (!token || isJwtExpired(token)) {
+        navigate("/login");
+        return;
+      }
+      const defaultAddress = getDefaultShippingAddress(
+        savedAddresses,
+        selectedAddressId,
+      );
+      if (!defaultAddress) {
+        toast.warning(
+          "Vui lòng nhập địa chỉ giao hàng mặc định trong hồ sơ để mua Flash Sale.",
+        );
+        navigate("/account");
+        return;
+      }
+      navigate("/flash-sale");
+      return;
+    }
     handleAddToCart();
   };
 
-  const actionLabel = action ? action.label : "Thêm giỏ hàng";
+  const actionLabel = action ? action.label : (data.flashMeta ? "Mua ngay Flash Sale" : "Thêm giỏ hàng");
   const actionIcon = action ? (
     (action.icon ?? null)
+  ) : data.flashMeta ? (
+    <span className="text-xl">⚡</span>
   ) : (
     <ShoppingCartOutlined className="text-base" />
   );

@@ -1,5 +1,5 @@
-import { Modal, Button, Input } from "antd";
-import { useState } from "react";
+import { Modal, Button, Input, Alert } from "antd";
+import { useMemo, useState } from "react";
 import type { ApiBook } from "../../utils/apiMappers";
 
 type ConfigPayload = {
@@ -16,6 +16,21 @@ interface FlashSaleConfigModalProps {
   onSubmit: (config: ConfigPayload) => void;
 }
 
+function parseIntegerInput(value: string): number {
+  const digitsOnly = value.replace(/\D/g, "");
+  if (!digitsOnly) return 0;
+  const parsed = Number(digitsOnly);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatVndInput(value: string): string {
+  const digitsOnly = value.replace(/\D/g, "");
+  if (!digitsOnly) return "";
+  return new Intl.NumberFormat("vi-VN", {
+    maximumFractionDigits: 0,
+  }).format(Number(digitsOnly));
+}
+
 export default function FlashSaleConfigModal({
   isOpen,
   book,
@@ -25,14 +40,14 @@ export default function FlashSaleConfigModal({
 }: FlashSaleConfigModalProps) {
   const [config, setConfig] = useState<ConfigPayload>({
     flash_price: initialConfig?.flash_price ?? "",
-    flash_stock: initialConfig?.flash_stock ?? "50",
+    flash_stock: initialConfig?.flash_stock ?? "0",
     purchase_limit: initialConfig?.purchase_limit ?? "1",
   });
 
   const getBaseConfig = () =>
     initialConfig || {
       flash_price: "",
-      flash_stock: "50",
+      flash_stock: "0",
       purchase_limit: "1",
     };
 
@@ -43,9 +58,10 @@ export default function FlashSaleConfigModal({
   };
 
   const handleSubmit = () => {
-    const price = Number(config.flash_price || 0);
+    const price = parseIntegerInput(config.flash_price);
     const stock = Number(config.flash_stock || 0);
     const limit = Number(config.purchase_limit || 1);
+    const availableStock = Number(book?.total_stock ?? 0);
 
     if (!price || price <= 0) {
       alert("Giá flash sale phải > 0");
@@ -59,16 +75,37 @@ export default function FlashSaleConfigModal({
       alert("Số lượng phải >= 1");
       return;
     }
+    if (book && Number.isFinite(availableStock) && stock > availableStock) {
+      alert(
+        `Số lượng Flash Sale không được vượt quá số lượng trong kho (${availableStock} cuốn). Vui lòng nhập lại số lượng hợp lý.`,
+      );
+      return;
+    }
     if (limit < 1) {
       alert("Giới hạn mua phải >= 1");
       return;
     }
 
-    onSubmit(config);
+    onSubmit({
+      ...config,
+      flash_price: String(price),
+    });
     onClose();
   };
 
-  const currentPrice = Number(config.flash_price || 0);
+  const currentPrice = parseIntegerInput(config.flash_price);
+  const currentStock = Number(config.flash_stock || 0);
+  const availableStock = Number(book?.total_stock ?? 0);
+  const stockError = useMemo(() => {
+    if (!book) return "";
+    if (!Number.isFinite(currentStock) || currentStock < 1) {
+      return "Số lượng Flash Sale phải lớn hơn hoặc bằng 1.";
+    }
+    if (Number.isFinite(availableStock) && currentStock > availableStock) {
+      return `Số lượng Flash Sale đang vượt quá tồn kho. Kho hiện có ${availableStock} cuốn, vui lòng nhập lại số lượng hợp lý.`;
+    }
+    return "";
+  }, [availableStock, book, currentStock]);
   const discount = book
     ? Math.round(
         ((book.selling_price - currentPrice) / book.selling_price) * 100,
@@ -85,7 +122,12 @@ export default function FlashSaleConfigModal({
         <Button key="cancel" onClick={onClose}>
           Hủy
         </Button>,
-        <Button key="submit" type="primary" onClick={handleSubmit}>
+        <Button
+          key="submit"
+          type="primary"
+          onClick={handleSubmit}
+          disabled={Boolean(stockError)}
+        >
           Xác nhận
         </Button>,
       ]}
@@ -110,13 +152,15 @@ export default function FlashSaleConfigModal({
             Giá Flash Sale (VND)
           </label>
           <Input
-            type="number"
+            inputMode="numeric"
             value={config.flash_price}
             onChange={(e) =>
-              setConfig({ ...config, flash_price: e.target.value })
+              setConfig({
+                ...config,
+                flash_price: formatVndInput(e.target.value),
+              })
             }
             placeholder="59000"
-            min="0"
           />
           {currentPrice > 0 && book && discount > 0 && (
             <div className="mt-1 text-sm text-green-600">
@@ -135,9 +179,23 @@ export default function FlashSaleConfigModal({
             onChange={(e) =>
               setConfig({ ...config, flash_stock: e.target.value })
             }
-            placeholder="50"
+            placeholder="0"
             min="1"
+            max={book?.total_stock}
+            status={stockError ? "error" : undefined}
           />
+          {stockError ? (
+            <Alert
+              className="mt-2"
+              type="error"
+              showIcon
+              message={stockError}
+            />
+          ) : book && Number.isFinite(availableStock) ? (
+            <div className="mt-1 text-sm text-gray-500">
+              Có thể đưa tối đa {availableStock} cuốn vào Flash Sale.
+            </div>
+          ) : null}
         </div>
 
         <div>
